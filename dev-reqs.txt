@@ -1,0 +1,11 @@
+MoPyTools
+nose
+WebTest
+redis == 2.4.10
+mock == 0.7.2
+-e git://github.com/mozilla-services/mozservices.git#egg=mozsvc
+-e git://github.com/mozilla-services/pyramid_whoauth.git#egg=pyramid_whoauth
+-e git://github.com/mozilla-services/cornice.git#egg=cornice
+-e git://github.com/mozilla-services/pyramid_ipauth.git#egg=pyramid_ipauth
+-e git://github.com/mozilla-services/pyramid_multiauth.git#egg=pyramid_multiauth
+-e git://github.com/mozilla-services/repoze.who.plugins.browserid.git#egg=repoze.who.plugins.browserid
