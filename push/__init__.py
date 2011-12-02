@@ -20,4 +20,6 @@ def main(global_config, **settings):
     # Adds application-specific views.
     config.scan('push.views')
 
+    config.add_static_view('/', 'push:static')
+
     return config.make_wsgi_app()
