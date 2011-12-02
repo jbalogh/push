@@ -2,7 +2,20 @@ from pyramid.config import Configurator
 
 from mozsvc.config import load_into_settings
 
+from push import storage
 from push.resources import Root
+
+
+def loader(config, settings, section):
+    """Instantiate the class in settings with the keyword arguments.
+
+    The following lines are identical:
+        >>> loader(.., {'backend': 'x.y.Class', 'flag': 3}, ..)
+        >>> x.y.Class(flag=3)
+    """
+    kwargs = settings['config'].get_map(section)
+    cls = config.maybe_dotted(kwargs.pop('backend'))
+    return cls(**kwargs)
 
 
 def main(global_config, **settings):
@@ -10,6 +23,9 @@ def main(global_config, **settings):
     load_into_settings(config_file, settings)
 
     config = Configurator(root_factory=Root, settings=settings)
+
+    config.registry['queuey'] = loader(config, settings, 'queuey')
+    config.registry['storage'] = loader(config, settings, 'storage')
 
     # Adds cornice.
     config.include('cornice')

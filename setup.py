@@ -16,7 +16,7 @@ requires = ['cornice', 'pyramid_whoauth', 'mozsvc']
 setup(name='push',
       version='0.2',
       description='push',
-      long_description=README + '\n\n' +  CHANGES,
+      long_description=README + '\n\n' + CHANGES,
       classifiers=[
         "Programming Language :: Python",
         "Framework :: Pylons",
@@ -33,10 +33,9 @@ setup(name='push',
       install_requires=requires,
       tests_require=requires,
       test_suite="push",
-      entry_points = """\
+      entry_points="""\
       [paste.app_factory]
       main = push:main
       """,
       paster_plugins=['pyramid'],
       )
-
