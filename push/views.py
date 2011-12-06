@@ -48,7 +48,8 @@ def check_api_key(request):
         return 404, 'Not Found.'
 
 
-@messages.post(validator=check_api_key)
+#@messages.post(validator=check_api_key)
+@messages.post()
 def new_message(request):
     """Add a new message to the queue."""
     queuey = request.registry['queuey']
@@ -62,6 +63,7 @@ def check_token(request):
     if 'x-auth-token' not in request.headers:
         return 400, 'An X-Auth-Token header must be included.'
 
+    token = request.headers['x-auth-token']
     storage = request.registry['storage']
 
     if not storage.user_owns_queue(token, request.matchdict['queue']):
