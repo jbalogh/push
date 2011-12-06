@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Push Dashboard Frame</title>
+    <script src="jschannel.js"></script>
+    <script src="jquery-underscore-backbone.js"></script>
+  </head>
+  <body>
+    <h1>Push Dashboard Frame</h1>
+    <ul id="logs"></ul>
+    <script>
+var root = 'http://push.app'; // TODO: change to test cross-domain permissions.
+
+var channel = Channel.build({window: window.parent, origin: '*', scope: 'push'});
+channel.bind('requestPermission', requestPermission);
+
+function log() {
+  var args = [].slice.call(arguments).join(' ');
+  console.log(args);
+  document.getElementById('logs').innerHTML += '<li>' + args + '</li>';
+}
+
+function requestPermission(transaction) {
+  log('requesting...');
+  transaction.delayReturn(true);
+  log('delayed');
+  getToken(function(token) {
+    log('token:', token)
+    var domain = location.hash.slice(1),
+        queue = 'queue:' + domain;
+    log('domain:', domain)
+
+    if (!localStorage[queue]) {
+      log('getting a queue');
+      $.post(root + '/queue/', {domain: domain, token: token},
+             function(response) {
+               log('got a queue:', response.queue);
+               localStorage[queue] = response.queue;
+               transaction.complete(localStorage[queue]);
+             });
+    } else {
+      transaction.complete(localStorage[queue]);
+    }
+  });
+}
+
+function getToken(cb) {
+  if (!localStorage.token) {
+    $.post(root + '/token/', function(response) {
+      localStorage.token = response.token;
+      return cb(localStorage.token);
+    });
+  } else {
+    cb(localStorage.token);
+  }
+}
+log('host', location.hostname);
+    </script>
+  </body>
+</html>
