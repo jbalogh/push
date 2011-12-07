@@ -12,7 +12,7 @@ class Queuey(object):
     def __init__(self, url, application_key):
         self.url = url[:-1] if url.endswith('/') else url
         self.application_key = application_key
-        self.headers = {'ApplicationKey': self.application_key}
+        self.headers = {'X-Application-Key': self.application_key}
 
     def request(self):
         return requests.session(headers=self.headers,
@@ -30,7 +30,7 @@ class Queuey(object):
 
     def new_message(self, queue, message):
         response = self.request().post(self.url + '/queue/%s/' % queue,
-                                       data={'message': message})
+                                       message)
         return response.json['status'] == 'ok'
 
     def get_messages(self, queue, since=None, limit=None, order=None):
