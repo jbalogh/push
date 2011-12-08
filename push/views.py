@@ -75,4 +75,9 @@ def get_messages(request):
     """Fetch messages from the queue, most recent first."""
     queuey = request.registry['queuey']
     queue = request.matchdict['queue']
-    return queuey.get_messages(queue, limit=12)
+
+    kwargs = {}
+    if 'since_timestamp' in request.GET:
+        kwargs['since_timestamp'] = request.GET['since_timestamp']
+    kwargs['limit'] = min(20, request.GET.get('limit', 20))
+    return {'messages': queuey.get_messages(queue, **kwargs)}
