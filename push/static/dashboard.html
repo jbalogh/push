@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Push Dashboard</title>
+    <script src="jquery-underscore-backbone.js"></script>
+    <script src="socket.io.js"></script>
+  </head>
+  <body>
+    <h1>Push Dashboard</h1>
+    <h2 id="token"></h2>
+    <ul id="messages"></ul>
+    <ul id="logs"></ul>
+    <script>
+var root = 'http://push.app'; // TODO: change to test cross-domain permissions.
+
+function websocket() {
+  var ws = new (window.MozWebSocket || window.WebSocket)('ws://localhost:9999/');
+  console.log(ws);
+  ws.onopen = function() {
+    console.log('open', ws.url);
+  };
+  ws.onmessage = function(e) {
+    console.log('data:', e.data);
+    addMessage(e.data);
+  };
+  ws.onclose = function() {
+    console.log('close');
+    websocket();
+  };
+  ws.onerror = function(e) {
+    console.log('error');
+  };
+  return ws;
+}
+
+function log() {
+  var args = [].slice.call(arguments).join(' ');
+  console.log(args);
+  document.getElementById('logs').innerHTML += '<li>' + args + '</li>';
+}
+
+function getToken(cb) {
+  if (!localStorage.token) {
+    $.post(root + '/token/', function(response) {
+      localStorage.token = response.token;
+      return cb(localStorage.token);
+    });
+  } else {
+    cb(localStorage.token);
+  }
+}
+
+function findQueues() {
+  var queues = {};
+  for (var i = 0, ii = localStorage.length; i < ii; i++) {
+    var key = localStorage.key(i),
+        value = localStorage.getItem(key);
+
+    if (key.indexOf('queue:') === 0) {
+      var domain = key.split(':').slice(1).join(':');
+      queues[domain] = value;
+    }
+  }
+  return queues;
+}
+
+function successWrapper(queue, cb) {
+  return function(response) {
+    if (response.messages.length) {
+      localStorage[queue] = (new Date).getTime() / 1000;
+    }
+    cb(response);
+  }
+}
+
+function getMessages(token, cb) {
+  var queues = findQueues();
+  for (var domain in queues) {
+    var queue = queues[domain],
+        since = localStorage.getItem(queue),
+        url = queue;
+    console.log(queue);
+    if (since) {
+      url += '?since=' + since;
+    }
+    log('fetching', url);
+    $.ajax({
+      url: url,
+      success: successWrapper(queue, cb),
+      headers: {'x-auth-token': token},
+      dataType: 'json',
+    });
+  }
+}
+
+var token,
+    $messages = $('#messages');
+
+getToken(function(t) {
+  token = t;
+  $('#token').text('Token: ' + token);
+  getMessages(token, function(response){
+    r = response;
+    _.each(response.messages, addMessage);
+  });
+  websocket();
+});
+
+function addMessage(msg) {
+  msg = JSON.parse(msg.body || msg);
+  s = '<li><b>' + msg.title + '</b><br>' + msg.body + '</li>';
+  $messages.append(s);
+}
+    </script>
+  </body>
+</html>
