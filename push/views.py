@@ -1,6 +1,6 @@
 import json
-import uuid
 
+import redis
 from cornice.service import Service
 
 
@@ -55,6 +55,10 @@ def new_message(request):
     queuey = request.registry['queuey']
     queue = request.matchdict['queue']
     body = json.dumps(dict(request.POST))
+
+    # Publish new messages to Redis for immediate delivery. Only a POC, the
+    # real implementation would need proper security checks.
+    redis.Redis().publish('push', body)
     return queuey.new_message(queue, body)
 
 
