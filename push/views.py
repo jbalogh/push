@@ -76,8 +76,8 @@ def get_messages(request):
     queuey = request.registry['queuey']
     queue = request.matchdict['queue']
 
-    kwargs = {}
-    if 'since_timestamp' in request.GET:
-        kwargs['since_timestamp'] = request.GET['since_timestamp']
-    kwargs['limit'] = min(20, request.GET.get('limit', 20))
+    kwargs = {'order': 'ascending',
+              'limit': min(20, request.GET.get('limit', 20))}
+    if 'since' in request.GET:
+        kwargs['since'] = request.GET['since']
     return {'messages': queuey.get_messages(queue, **kwargs)}
