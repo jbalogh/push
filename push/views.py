@@ -32,7 +32,9 @@ def new_queue(request):
     queue = queuey.new_queue()
     token, domain = request.POST['token'], request.POST['domain']
     storage.new_queue(queue, token, domain)
-    return {'queue': request.route_url('/queue/{queue}/', queue=queue)}
+    # Fake the app url until we work out CORS.
+    return {'queue': request.route_url('/queue/{queue}/', queue=queue,
+                                       _app_url='http://push.app')}
 
 
 def check_api_key(request):
