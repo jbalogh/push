@@ -9,3 +9,8 @@ mock == 0.7.2
 -e git://github.com/mozilla-services/pyramid_ipauth.git#egg=pyramid_ipauth
 -e git://github.com/mozilla-services/pyramid_multiauth.git#egg=pyramid_multiauth
 -e git://github.com/mozilla-services/repoze.who.plugins.browserid.git#egg=repoze.who.plugins.browserid
+
+# websockets
+txWS==0.6.2
+txredisapi==0.2
+twisted==11.1
