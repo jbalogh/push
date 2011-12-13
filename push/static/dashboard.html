@@ -15,7 +15,7 @@
 var root = 'http://push.app'; // TODO: change to test cross-domain permissions.
 
 function websocket() {
-  var ws = new (window.MozWebSocket || window.WebSocket)('ws://localhost:9999/');
+  var ws = new (window.MozWebSocket || window.WebSocket)('ws://' + location.hostname + ':9999/');
   console.log(ws);
   ws.onopen = function() {
     console.log('open', ws.url);
