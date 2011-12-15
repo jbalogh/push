@@ -27,20 +27,33 @@
     <script src="include.js"></script>
     <script>
       var queue;
-      $('#enable button').click(function(e) {
-        e.preventDefault();
-        navigator.notifications.requestPermission(function(q) {
-          queue = q;
-          $('#enable').hide();
-          $('#send').show();
+      if (navigator.notifications) {
+        console.log('checking in consumer');
+        navigator.notifications.checkPermission(function(q) {
+          console.log('ok');
+          if (q) {
+            enable(q);
+          } else {
+            $('#enable button').click(function(e) {
+              e.preventDefault();
+              navigator.notifications.requestPermission(enable);
+            });
+          };
         });
-      });
+      }
+
       $('#send form').submit(function(e) {
         e.preventDefault();
         $.post('/example/queue/',
                {queue: queue, message: $('#message').val()});
         $('#message').val('');
       });
+
+      function enable(q) {
+        queue = q;
+        $('#enable').hide();
+        $('#send').show();
+      }
     </script>
   </body>
 </html>

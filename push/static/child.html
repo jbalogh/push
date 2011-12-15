@@ -14,6 +14,7 @@ var root = 'http://push.app'; // TODO: change to test cross-domain permissions.
 
 var channel = Channel.build({window: window.parent, origin: '*', scope: 'push'});
 channel.bind('requestPermission', requestPermission);
+channel.bind('checkPermission', checkPermission);
 
 function log() {
   var args = [].slice.call(arguments).join(' ');
@@ -24,7 +25,6 @@ function log() {
 function requestPermission(transaction) {
   log('requesting...');
   transaction.delayReturn(true);
-  log('delayed');
   getToken(function(token) {
     log('token:', token)
     var domain = location.hash.slice(1),
@@ -43,6 +43,19 @@ function requestPermission(transaction) {
       transaction.complete(localStorage[queue]);
     }
   });
+}
+
+function checkPermission(transaction) {
+  log('checkPermission');
+  transaction.delayReturn(true);
+  if (!localStorage.token) {
+    log('no token');
+    transaction.complete(false);
+  } else {
+    var domain = location.hash.slice(1);
+    log('has queue? ' + !!localStorage['queue:' + domain]);
+    transaction.complete(localStorage['queue:' + domain]);
+  }
 }
 
 function getToken(cb) {
