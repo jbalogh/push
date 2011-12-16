@@ -67,7 +67,8 @@ function findQueues() {
 function successWrapper(queue, cb) {
   return function(response) {
     if (response.messages.length) {
-      localStorage[queue] = (new Date).getTime() / 1000;
+      _.each(response.messages, function(e) { e.body = JSON.parse(e.body || e); });
+      localStorage[queue] = Math.max.apply(null, _.pluck(response.messages, 'timestamp'));
     }
     cb(response);
   }
@@ -107,8 +108,7 @@ getToken(function(t) {
 });
 
 function addMessage(msg) {
-  msg = JSON.parse(msg.body || msg);
-  s = '<li><b>' + msg.title + '</b><br>' + msg.body + '</li>';
+  s = '<li><b>' + msg.body.title + '</b><br>' + msg.body.body + '</li>';
   $messages.append(s);
 }
     </script>

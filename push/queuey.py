@@ -31,7 +31,7 @@ class Queuey(object):
     def new_message(self, queue, message):
         response = self.request().post(self.url + '/queue/%s/' % queue,
                                        message)
-        return response.json['status'] == 'ok'
+        return response.json
 
     def get_messages(self, queue, since=None, limit=None, order=None):
         keys = ('since_timestamp', 'limit', 'order')
