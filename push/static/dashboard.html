@@ -21,7 +21,12 @@ function websocket() {
   };
   ws.onmessage = function(e) {
     console.log('data:', e.data);
-    addMessage(e.data);
+    var data = JSON.parse(e.data)
+    data.body = JSON.parse(data.body);
+    var queue = _.find(_.values(findQueues()),
+                       function(q){ return q.indexOf(data.queue) !== -1; });
+    localStorage[queue] = data.timestamp;
+    addMessage(data);
   };
   ws.onclose = function() {
     console.log('close');
@@ -67,7 +72,7 @@ function findQueues() {
 function successWrapper(queue, cb) {
   return function(response) {
     if (response.messages.length) {
-      _.each(response.messages, function(e) { e.body = JSON.parse(e.body || e); });
+      _.each(response.messages, function(e) { e.body = JSON.parse(e.body); });
       localStorage[queue] = Math.max.apply(null, _.pluck(response.messages, 'timestamp'));
     }
     cb(response);

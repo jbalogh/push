@@ -58,8 +58,13 @@ def new_message(request):
 
     # Publish new messages to Redis for immediate delivery. Only a POC, the
     # real implementation would need proper security checks.
-    redis.Redis().publish('push', body)
-    return queuey.new_message(queue, body)
+    response = queuey.new_message(queue, body)
+    pub = json.dumps({'timestamp': response['timestamp'],
+                      'key': response['key'],
+                      'queue': queue,
+                      'body': body})
+    redis.Redis().publish('push', pub)
+    return response
 
 
 def check_token(request):
