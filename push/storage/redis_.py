@@ -28,3 +28,6 @@ class Storage(StorageBase):
 
     def get_domain_by_key(self, key):
         return self.redis.hget(self.k, key)
+
+    def get_user_for_queue(self, queue):
+        return self.redis.hget(self.q + queue, 'user')

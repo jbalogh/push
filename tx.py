@@ -8,40 +8,39 @@ from txredisapi import SubscriberFactory, SubscriberProtocol
 import txws
 
 
-sockets = []
-
-
 class WebSocket(Protocol):
 
-    def connectionMade(self):
-        self.factory.clients.add(self)
+    def __init__(self):
+        self.token = None
 
     def connectionLost(self, reason):
-        self.factory.clients.remove(self)
+        if self.token in self.factory.clients:
+            del self.factory.clients[self.token]
 
     def dataReceived(self, data):
-        log.msg('data:', data)
-        self.transport.write(data)
+        self.token = data.strip()
+        self.factory.clients[self.token] = self
 
 
 class WebSocketFactory(Factory):
     protocol = WebSocket
 
     def __init__(self):
-        self.clients = set()
+        self.clients = {}
 
-    def broadcast(self, msg):
-        for client in self.clients:
-            client.transport.write(msg)
+    def send(self, token, message):
+        if token in self.clients:
+            self.clients[token].transport.write(message)
 
 
 class PubSub(SubscriberProtocol):
 
     def connectionMade(self):
-        self.subscribe('push')
+        self.psubscribe('push.*')
 
     def messageReceived(self, pattern, channel, message):
-        self.factory.websockets.broadcast(message.encode('utf-8'))
+        token = channel[len('push.'):]
+        self.factory.websockets.send(token, message.encode('utf-8'))
 
 
 class PubSubFactory(SubscriberFactory):

@@ -48,22 +48,30 @@ def check_api_key(request):
         return 404, 'Not Found.'
 
 
-#@messages.post(validator=check_api_key)
-@messages.post()
+def queue_has_token(request):
+    storage = request.registry['storage']
+    queue = request.matchdict['queue']
+    user = storage.get_user_for_queue(queue)
+    if not user:
+        return 404, 'Not Found'
+
+    request.validated['user'] = user
+
+
+@messages.post(validator=queue_has_token)
 def new_message(request):
     """Add a new message to the queue."""
     queuey = request.registry['queuey']
     queue = request.matchdict['queue']
     body = json.dumps(dict(request.POST))
+    token = request.validated['user']
 
-    # Publish new messages to Redis for immediate delivery. Only a POC, the
-    # real implementation would need proper security checks.
     response = queuey.new_message(queue, body)
     pub = json.dumps({'timestamp': response['timestamp'],
                       'key': response['key'],
                       'queue': queue,
                       'body': body})
-    redis.Redis().publish('push', pub)
+    redis.Redis().publish('push.' + token, pub)
     return response
 
 
