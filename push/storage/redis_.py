@@ -31,3 +31,9 @@ class Storage(StorageBase):
 
     def get_user_for_queue(self, queue):
         return self.redis.hget(self.q + queue, 'user')
+
+    def set_queue_timestamp(self, queue, timestamp):
+        self.redis.hset(self.q + queue, 'timestamp', timestamp)
+
+    def get_queue_timestamp(self, queue):
+        return float(self.redis.hget(self.q + queue, 'timestamp') or 0)
