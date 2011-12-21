@@ -1,3 +1,9 @@
+/*jshint browser:true jquery:true curly:true noarg:true trailing:true */
+/*global console _ */
+
+(function() {
+"use strict";
+
 var root = 'http://push.app'; // TODO: change to test cross-domain permissions.
 
 function websocket() {
@@ -10,11 +16,11 @@ function websocket() {
   };
   ws.onmessage = function(e) {
     console.log('data:', e.data);
-    var data = JSON.parse(e.data)
+    var data = JSON.parse(e.data);
     data.body = JSON.parse(data.body);
     var queue = _.find(_.values(findQueues()),
                        function(q){ return q.indexOf(data.queue) !== -1; });
-    localStorage[queue] = data.timestamp;
+    updateQueueTimestamp(queue, data.timestamp);
     addMessage(data);
   };
   ws.onclose = function() {
@@ -27,15 +33,17 @@ function websocket() {
   return ws;
 }
 
+
 function log() {
   var args = [].slice.call(arguments).join(' ');
   console.log(args);
   document.getElementById('logs').innerHTML += '<li>' + args + '</li>';
 }
 
+
 function getToken(cb) {
   if (!localStorage.token) {
-    $.post(root + '/token/', function(response) {
+    $.post('://' + location.host + '/token/', function(response) {
       localStorage.token = response.token;
       return cb(localStorage.token);
     });
@@ -43,6 +51,7 @@ function getToken(cb) {
     cb(localStorage.token);
   }
 }
+
 
 function findQueues() {
   var queues = {};
@@ -58,17 +67,45 @@ function findQueues() {
   return queues;
 }
 
-function successWrapper(queue, cb) {
-  return function(response) {
-    if (response.messages.length) {
-      _.each(response.messages, function(e) { e.body = JSON.parse(e.body); });
-      localStorage[queue] = Math.max.apply(null, _.pluck(response.messages, 'timestamp'));
-    }
-    cb(response);
-  }
+
+function updateQueueTimestamp(queue, timestamp) {
+  log('update', queue, timestamp);
+  // localStorage[queue] = timestamp;
+  $.ajax({
+    type: 'PUT',
+    url: queue,
+    data: {timestamp: timestamp},
+    success: function(){ log('updated timestamp to', timestamp); }
+  });
 }
 
-function getMessages(token, cb) {
+
+function messageHandler(queue) {
+  return function(response) {
+    if (response.messages.length) {
+      // Convert the messages to JSON.
+      _.each(response.messages,
+             function(e){ e.body = JSON.parse(e.body); });
+
+      // Update the queue's timestamp.
+      var timestamps = _.pluck(response.messages, 'timestamp');
+      updateQueueTimestamp(queue, Math.max.apply(null, timestamps));
+
+      log(response.last_seen);
+      var latest = Math.max(response.last_seen, localStorage[queue]);
+      log('latest', new Date(latest * 1000));
+
+      // Render the new messages.
+      _.each(response.messages, function(m) {
+        m.visited = m.timestamp <= latest;
+        addMessage(m);
+      });
+    }
+  };
+}
+
+
+function getMessages(token) {
   var queues = findQueues();
   for (var domain in queues) {
     var queue = queues[domain],
@@ -81,12 +118,23 @@ function getMessages(token, cb) {
     log('fetching', url);
     $.ajax({
       url: url,
-      success: successWrapper(queue, cb),
+      success: messageHandler(queue),
       headers: {'x-auth-token': token},
-      dataType: 'json',
+      dataType: 'json'
     });
   }
 }
+
+
+function addMessage(msg) {
+  log(msg.body.body, msg.timestamp);
+  var cls = msg.visited ? 'old' : 'new',
+      s = ('<li class="' + cls + '"><b>' + msg.body.title +
+           '</b>(' + new Date(msg.timestamp * 1000) + ')<br>' +
+           msg.body.body + '</li>');
+  $messages.append(s);
+}
+
 
 var token,
     $messages = $('#messages');
@@ -94,14 +142,8 @@ var token,
 getToken(function(t) {
   token = t;
   $('#token').text('Token: ' + token);
-  getMessages(token, function(response){
-    r = response;
-    _.each(response.messages, addMessage);
-  });
+  getMessages(token);
   websocket();
 });
 
-function addMessage(msg) {
-  s = '<li><b>' + msg.body.title + '</b><br>' + msg.body.body + '</li>';
-  $messages.append(s);
-}
+})();
