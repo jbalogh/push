@@ -7,6 +7,24 @@ from cornice.service import Service
 tokens = Service(name='tokens', path='/token/')
 queues = Service(name='queues', path='/queue/')
 messages = Service(name='messages', path='/queue/{queue}/')
+android = Service(name='android', path='/android/')
+
+
+def has_token_and_registration_id(request):
+    "Non-empty token and registration_id values must be give in the POST body."
+    for key in ('token', 'registration_id'):
+        if not request.POST.get(key):
+            return 400, 'Missing required argument: ' + key
+
+
+@android.post(validator=has_token_and_registration_id)
+def add_droid_id(request):
+    """Sync an Android device ID with a push token."""
+    storage = request.registry['storage']
+    user = request.POST['token']
+    droid_id = request.POST['registration_id']
+    storage.set_android_id(user, droid_id)
+    return {'ok': 'ok'}
 
 
 @tokens.post()

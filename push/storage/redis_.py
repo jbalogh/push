@@ -8,6 +8,7 @@ class Storage(StorageBase):
     u = 'push:u:1:'  # Users.
     d = 'push:d:1:'  # Domains.
     k = 'push:k:1:'  # API keys.
+    a = 'push:a:1:'  # Android tokens.
 
     def __init__(self, **kw):
         self.redis = redis.Redis(**kw)
@@ -37,3 +38,9 @@ class Storage(StorageBase):
 
     def get_queue_timestamp(self, queue):
         return float(self.redis.hget(self.q + queue, 'timestamp') or 0)
+
+    def set_android_id(self, user, droid_id):
+        return self.redis.set(self.a + user, droid_id)
+
+    def get_android_id(self, user):
+        return self.redis.get(self.a + user)
