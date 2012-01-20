@@ -1,4 +1,6 @@
 # Usage: twistd -ny tx.py
+import json
+
 from twisted.application import internet
 from twisted.application.service import Application
 from twisted.internet.protocol import Factory, Protocol
@@ -6,6 +8,9 @@ from twisted.python import log
 
 from txredisapi import SubscriberFactory, SubscriberProtocol
 import txws
+
+import c2dm
+from push.storage.redis_ import Storage
 
 
 class WebSocket(Protocol):
@@ -40,7 +45,16 @@ class PubSub(SubscriberProtocol):
 
     def messageReceived(self, pattern, channel, message):
         token = channel[len('push.'):]
-        self.factory.websockets.send(token, message.encode('utf-8'))
+        message = message.encode('utf-8')
+        self.factory.websockets.send(token, message)
+        self.send_to_droid(token, message)
+
+    def send_to_droid(self, token, message):
+        droid_id = self.factory.storage.get_android_id(token)
+        if droid_id:
+            print 'droid message', message
+            message = json.loads(message)
+            c2dm.c2dm(droid_id, 'ok', json.loads(message['body']))
 
 
 class PubSubFactory(SubscriberFactory):
@@ -48,9 +62,10 @@ class PubSubFactory(SubscriberFactory):
 
     def __init__(self, websockets):
         self.websockets = websockets
+        self.storage = Storage(host='localhost', port=6379)
 
 
-application = Application('web sockets!')
+application = Application('push')
 
 wsfactory = WebSocketFactory()
 service = internet.TCPServer(9999, txws.WebSocketFactory(wsfactory))
