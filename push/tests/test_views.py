@@ -7,6 +7,8 @@ from nose.tools import eq_
 from push import views
 import push.storage.mem
 
+from mock_queuey import MockQueuey
+
 
 def assert_error(code, message, response):
     eq_(code, response[0])
@@ -20,7 +22,9 @@ class ViewTest(unittest2.TestCase):
 
         self.request = testing.DummyRequest()
         self.storage = push.storage.mem.Storage()
+        self.queuey = MockQueuey()
         self.request.registry['storage'] = self.storage
+        self.request.registry['queuey'] = self.queuey
 
     def tearDown(self):
         testing.tearDown()
@@ -64,3 +68,36 @@ class ViewTest(unittest2.TestCase):
         eq_(views.add_droid_id(request), {'ok': 'ok'})
 
         eq_(self.storage.get_android_id('t'), 'r')
+
+    def test_has_token_and_domain(self):
+        request = testing.DummyRequest(post={'token': ''})
+        response = views.has_token_and_domain(request)
+        assert_error(400, 'Missing required argument: token', response)
+
+        request = testing.DummyRequest(post={'token': 'ok'})
+        response = views.has_token_and_domain(request)
+        assert_error(400, 'Missing required argument: domain', response)
+
+        request = testing.DummyRequest(post={'domain': 'ok'})
+        response = views.has_token_and_domain(request)
+        assert_error(400, 'Missing required argument: token', response)
+
+        request = testing.DummyRequest(post={'token': 'ok',
+                                             'domain': ''})
+        response = views.has_token_and_domain(request)
+        assert_error(400, 'Missing required argument: domain', response)
+
+        request = testing.DummyRequest(post={'token': 't',
+                                             'domain': 'r'})
+        eq_(None, views.has_token_and_domain(request))
+
+    def test_new_queue(self):
+        self.queuey.new_queue = lambda: 'new-queue'
+        request = testing.DummyRequest(post={'token': 't', 'domain': 'x.com'})
+        request.route_url = lambda s, **kw: s.format(**kw)
+        response = views.new_queue(request)
+        eq_(response, {'queue': '/queue/new-queue/'})
+
+        assert self.storage.user_owns_queue('t', 'new-queue')
+        assert self.storage.domain_owns_queue('x.com', 'new-queue')
+        eq_(self.storage.get_user_for_queue('new-queue'), 't')
