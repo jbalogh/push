@@ -53,19 +53,6 @@ def new_queue(request):
     return {'queue': request.route_url('/queue/{queue}/', queue=queue)}
 
 
-def check_api_key(request):
-    """The API key must match the domain that set up the queue."""
-    if 'x-api-key' not in request.headers:
-        return 400, 'An X-API-KEY header must be included.'
-
-    storage = request.registry['storage']
-    api_key = request.headers['x-api-key']
-    domain = storage.get_domain_by_key(api_key)
-
-    if not storage.domain_owns_queue(domain, request.matchdict['queue']):
-        return 404, 'Not Found.'
-
-
 def queue_has_token(request):
     storage = request.registry['storage']
     queue = request.matchdict['queue']
