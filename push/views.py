@@ -17,7 +17,7 @@ def has_token_and_registration_id(request):
             return 400, 'Missing required argument: ' + key
 
 
-@android.post(validator=has_token_and_registration_id)
+@android.post(validators=has_token_and_registration_id)
 def add_droid_id(request):
     """Sync an Android device ID with a push token."""
     storage = request.registry['storage']
@@ -41,7 +41,7 @@ def has_token_and_domain(request):
             return 400, 'Missing required argument: ' + key
 
 
-@queues.post(validator=has_token_and_domain)
+@queues.post(validators=has_token_and_domain)
 def new_queue(request):
     """Create a new queue between the given user and domain."""
     queuey = request.registry['queuey']
@@ -63,7 +63,7 @@ def queue_has_token(request):
     request.validated['user'] = user
 
 
-@messages.post(validator=queue_has_token)
+@messages.post(validators=queue_has_token)
 def new_message(request):
     """Add a new message to the queue."""
     queuey = request.registry['queuey']
@@ -89,7 +89,7 @@ def valid_float(request):
         return 400, '`timestamp` must be a float.'
 
 
-@messages.put(validator=(queue_has_token, valid_float))
+@messages.put(validators=(queue_has_token, valid_float))
 def add_timestamp(request):
     storage = request.registry['storage']
     queue = request.matchdict['queue']
@@ -110,7 +110,7 @@ def check_token(request):
         return 404, 'Not Found.'
 
 
-@messages.get(validator=check_token)
+@messages.get(validators=check_token)
 def get_messages(request):
     """Fetch messages from the queue, most recent first."""
     queuey = request.registry['queuey']
