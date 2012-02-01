@@ -16,8 +16,8 @@ def assert_error(code, message, response):
     eq_(message, response[1])
 
 
-def Request(post=None, matchdict=None):
-    request = testing.DummyRequest(post=post)
+def Request(post=None, matchdict=None, headers=None):
+    request = testing.DummyRequest(post=post, headers=headers)
     if matchdict:
         request.matchdict = matchdict
     if not hasattr(request, 'validated'):
@@ -146,6 +146,7 @@ class ViewTest(unittest2.TestCase):
                                          'key': response['key']})
 
     def test_valid_float(self):
+        # Check the validator.
         request = Request()
         assert_error(400, 'Need a `timestamp` parameter.',
                      views.valid_float(request))
@@ -154,14 +155,31 @@ class ViewTest(unittest2.TestCase):
         assert_error(400, '`timestamp` must be a float.',
                      views.valid_float(request))
 
+        # Make sure a good value goes in request.validated.
         request = Request(post={'timestamp': '1.2'})
         eq_(views.valid_float(request), None)
         eq_(request.validated['timestamp'], 1.2)
 
     def test_add_timestamp(self):
+        # Check that PUTing a timestamp adds it to storage.
         request = Request(post={'timestamp': 1.2},
                           matchdict={'queue': 'queue'})
         views.valid_float(request)
         eq_(views.add_timestamp(request), {})
 
         eq_(self.storage.get_queue_timestamp('queue'), 1.2)
+
+    def test_check_token(self):
+        # Check the validator.
+        request = Request()
+        assert_error(400, 'An X-Auth-Token header must be included.',
+                     views.check_token(request))
+
+        request = Request(headers={'x-auth-token': 'token'},
+                          matchdict={'queue': 'queue'})
+        assert_error(404, 'Not Found.', views.check_token(request))
+
+        self.storage.new_queue('queue', 'user', 'domain')
+        request = Request(headers={'x-auth-token': 'user'},
+                          matchdict={'queue': 'queue'})
+        eq_(views.check_token(request), None)
