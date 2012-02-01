@@ -16,8 +16,8 @@ def assert_error(code, message, response):
     eq_(message, response[1])
 
 
-def Request(post=None, matchdict=None, headers=None):
-    request = testing.DummyRequest(post=post, headers=headers)
+def Request(params=None, post=None, matchdict=None, headers=None):
+    request = testing.DummyRequest(params=params, post=post, headers=headers)
     if matchdict:
         request.matchdict = matchdict
     if not hasattr(request, 'validated'):
@@ -184,8 +184,50 @@ class ViewTest(unittest2.TestCase):
                           matchdict={'queue': 'queue'})
         eq_(views.check_token(request), None)
 
-    def test_get_messages(self):
+    @mock.patch('push.tests.mock_queuey.time')
+    def test_get_messages(self, time_mock):
+        # Check that we can get both of the messages back.
+        time_mock.time = [3, 2, 1].pop
+
         queue = self.queuey.new_queue()
         self.storage.new_queue(queue, 'user', 'domain')
+
+        key1 = self.queuey.new_message(queue, 'one')['key']
+        key2 = self.queuey.new_message(queue, 'two')['key']
+
         request = Request(headers={'x-auth-token': 'user'},
-                          matchdict={'queue': 'queue'})
+                          matchdict={'queue': queue})
+        eq_(views.get_messages(request), {
+            'messages': [{'body': 'one', 'timestamp': 1, 'key': key1},
+                         {'body': 'two', 'timestamp': 2, 'key': key2}],
+            'last_seen': 0})
+
+    def test_get_messages_last_seen(self):
+        # Check that the last_seen parameter is sent properly.
+        queue = self.queuey.new_queue()
+        self.storage.new_queue(queue, 'user', 'domain')
+
+        request = Request(headers={'x-auth-token': 'user'},
+                          matchdict={'queue': queue})
+        eq_(views.get_messages(request), {'messages': [], 'last_seen': 0})
+
+        self.storage.set_queue_timestamp(queue, 12)
+        eq_(views.get_messages(request), {'messages': [], 'last_seen': 12})
+
+    @mock.patch('push.tests.mock_queuey.time')
+    def test_get_messages_since(self, time_mock):
+        # Check that we honor the since parameter.
+        time_mock.time = [3, 2, 1].pop
+
+        queue = self.queuey.new_queue()
+        self.storage.new_queue(queue, 'user', 'domain')
+
+        key1 = self.queuey.new_message(queue, 'one')['key']
+        key2 = self.queuey.new_message(queue, 'two')['key']
+
+        request = Request(params={'since': 1},
+                          headers={'x-auth-token': 'user'},
+                          matchdict={'queue': queue})
+        eq_(views.get_messages(request), {
+            'messages': [{'body': 'two', 'timestamp': 2, 'key': key2}],
+            'last_seen': 0})
