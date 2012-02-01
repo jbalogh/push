@@ -144,3 +144,16 @@ class ViewTest(unittest2.TestCase):
                                          'timestamp': 1,
                                          'body': body,
                                          'key': response['key']})
+
+    def test_valid_float(self):
+        request = Request()
+        assert_error(400, 'Need a `timestamp` parameter.',
+                     views.valid_float(request))
+
+        request = Request(post={'timestamp': 'aab'})
+        assert_error(400, '`timestamp` must be a float.',
+                     views.valid_float(request))
+
+        request = Request(post={'timestamp': '1.2'})
+        eq_(views.valid_float(request), None)
+        eq_(request.validated['timestamp'], 1.2)

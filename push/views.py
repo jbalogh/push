@@ -89,7 +89,7 @@ def valid_float(request):
     if 'timestamp' not in request.POST:
         return 400, 'Need a `timestamp` parameter.'
     try:
-        float(request.POST['timestamp'])
+        request.validated['timestamp'] = float(request.POST['timestamp'])
     except (ValueError, TypeError):
         return 400, '`timestamp` must be a float.'
 
@@ -98,7 +98,7 @@ def valid_float(request):
 def add_timestamp(request):
     storage = request.registry['storage']
     queue = request.matchdict['queue']
-    timestamp = request.POST['timestamp']
+    timestamp = request.validated['timestamp']
     storage.set_queue_timestamp(queue, timestamp)
     return {}
 
