@@ -157,3 +157,11 @@ class ViewTest(unittest2.TestCase):
         request = Request(post={'timestamp': '1.2'})
         eq_(views.valid_float(request), None)
         eq_(request.validated['timestamp'], 1.2)
+
+    def test_add_timestamp(self):
+        request = Request(post={'timestamp': 1.2},
+                          matchdict={'queue': 'queue'})
+        views.valid_float(request)
+        eq_(views.add_timestamp(request), {})
+
+        eq_(self.storage.get_queue_timestamp('queue'), 1.2)
