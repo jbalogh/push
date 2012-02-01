@@ -26,7 +26,8 @@ class Storage(StorageBase):
         return self.db['queues'][queue].get('user')
 
     def set_queue_timestamp(self, queue, timestamp):
-        self.db['queues'][queue]['timestamp'] = timestamp
+        current = self.get_queue_timestamp(queue)
+        self.db['queues'][queue]['timestamp'] = max(current, timestamp)
 
     def get_queue_timestamp(self, queue):
         return float(self.db['queues'][queue].get('timestamp', 0))

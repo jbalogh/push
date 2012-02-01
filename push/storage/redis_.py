@@ -27,7 +27,8 @@ class Storage(StorageBase):
         return self.redis.hget(self.q + queue, 'user')
 
     def set_queue_timestamp(self, queue, timestamp):
-        self.redis.hset(self.q + queue, 'timestamp', timestamp)
+        current = self.get_queue_timestamp(queue)
+        self.redis.hset(self.q + queue, 'timestamp', max(current, timestamp))
 
     def get_queue_timestamp(self, queue):
         return float(self.redis.hget(self.q + queue, 'timestamp') or 0)

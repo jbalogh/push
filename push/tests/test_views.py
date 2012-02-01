@@ -183,3 +183,9 @@ class ViewTest(unittest2.TestCase):
         request = Request(headers={'x-auth-token': 'user'},
                           matchdict={'queue': 'queue'})
         eq_(views.check_token(request), None)
+
+    def test_get_messages(self):
+        queue = self.queuey.new_queue()
+        self.storage.new_queue(queue, 'user', 'domain')
+        request = Request(headers={'x-auth-token': 'user'},
+                          matchdict={'queue': 'queue'})

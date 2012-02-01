@@ -25,6 +25,12 @@ class StorageTest(unittest2.TestCase):
         self.storage.set_queue_timestamp('queue', 12)
         eq_(self.storage.get_queue_timestamp('queue'), 12)
 
+    def test_set_queue_timestamp_greater(self):
+        # New values must be greater than the old value.
+        self.storage.set_queue_timestamp('queue', 12)
+        self.storage.set_queue_timestamp('queue', 2)
+        eq_(self.storage.get_queue_timestamp('queue'), 12)
+
     def test_get_queue_timestamp(self):
         eq_(self.storage.get_queue_timestamp('unknown'), 0)
 
