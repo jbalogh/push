@@ -19,8 +19,12 @@ class Queuey(object):
                                 hooks={'response': self.json_response})
 
     def json_response(self, response):
+        """Turn a response into JSON or raise an error."""
         if response.status_code == 200:
-            response.json = json.loads(response.content)
+            try:
+                response.json = json.loads(response.content)
+            except Exception:
+                raise QueueyException(response)
         else:
             raise QueueyException(response)
 
