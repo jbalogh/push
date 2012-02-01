@@ -68,16 +68,21 @@ def new_message(request):
     """Add a new message to the queue."""
     queuey = request.registry['queuey']
     queue = request.matchdict['queue']
-    body = json.dumps(dict(request.POST))
+    body = dict(request.POST)
     token = request.validated['user']
 
-    response = queuey.new_message(queue, body)
-    pub = json.dumps({'timestamp': response['timestamp'],
-                      'key': response['key'],
-                      'queue': queue,
-                      'body': body})
-    redis.Redis().publish('push.' + token, pub)
+    response = queuey.new_message(queue, json.dumps(body))
+    pub = {'timestamp': response['timestamp'],
+           'key': response['key'],
+           'queue': queue,
+           'body': body}
+    publish(token, pub)
     return response
+
+
+def publish(token, message):
+    """Publish the message over pubsub on the token's channel."""
+    redis.Redis().publish('push.' + token, json.dumps(message))
 
 
 def valid_float(request):
