@@ -14,8 +14,3 @@ requests == 0.8.2
 # pubsub
 pyzmq
 tornado
-
-# websockets
-txWS==0.6.2
-txredisapi==0.2
-twisted==11.1
