@@ -139,7 +139,7 @@ class ViewTest(unittest2.TestCase):
              'timestamp': 1,
              'key': response['key']})
 
-        publish_mock.assert_called_with(mock.sentinel.user,
+        publish_mock.assert_called_with(request, mock.sentinel.user,
                                         {'queue': queue,
                                          'timestamp': 1,
                                          'body': body,

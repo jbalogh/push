@@ -11,6 +11,10 @@ requests == 0.8.2
 -e git://github.com/mozilla-services/pyramid_multiauth.git#egg=pyramid_multiauth
 -e git://github.com/mozilla-services/repoze.who.plugins.browserid.git#egg=repoze.who.plugins.browserid
 
+# pubsub
+pyzmq
+tornado
+
 # websockets
 txWS==0.6.2
 txredisapi==0.2

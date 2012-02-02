@@ -1,6 +1,7 @@
 import json
 
-import redis
+import zmq
+
 from cornice.service import Service
 
 
@@ -76,13 +77,16 @@ def new_message(request):
            'key': response['key'],
            'queue': queue,
            'body': body}
-    publish(token, pub)
+    publish(request, token, pub)
     return response
 
 
 def publish(token, message):
     """Publish the message over pubsub on the token's channel."""
-    redis.Redis().publish('push.' + token, json.dumps(message))
+    socket = zmq.Context().socket(zmq.PUB)
+    socket.bind(request.registry.settings.get('pubsub', 'pub'))
+    socket.send('PUSH %s %s' % (token, json.dumps(message)))
+    socket.close()
 
 
 def valid_float(request):

@@ -18,3 +18,4 @@ nosetests.xml
 man
 .channel
 twistd.pid
+etc/local.ini
