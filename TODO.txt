@@ -1,0 +1,8 @@
+* test android.py
+* pubsub integration tests
+* make a pubsub hub to control the business logic, send messages out to
+  specific android, iphone, websocket listeners
+* switch storage to use sql, get rid of redis dependency
+* match up the new message implementation with the documented API
+* figure out how sharding will work
+* figure out internal communication protocols
