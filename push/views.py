@@ -98,15 +98,6 @@ def valid_float(request):
         return 400, '`timestamp` must be a float.'
 
 
-@messages.put(validators=(queue_has_token, valid_float))
-def add_timestamp(request):
-    storage = request.registry['storage']
-    queue = request.matchdict['queue']
-    timestamp = request.validated['timestamp']
-    storage.set_queue_timestamp(queue, timestamp)
-    return {}
-
-
 def check_token(request):
     """The queue must be requested with a matching device token."""
     if 'x-auth-token' not in request.headers:
@@ -117,6 +108,15 @@ def check_token(request):
 
     if not storage.user_owns_queue(token, request.matchdict['queue']):
         return 404, 'Not Found.'
+
+
+@messages.put(validators=(check_token, valid_float))
+def add_timestamp(request):
+    storage = request.registry['storage']
+    queue = request.matchdict['queue']
+    timestamp = request.validated['timestamp']
+    storage.set_queue_timestamp(queue, timestamp)
+    return {}
 
 
 @messages.get(validators=check_token)
