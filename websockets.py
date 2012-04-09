@@ -39,7 +39,10 @@ class Push(object):
 
     def send(self, token, data):
         if token in SOCKETS:
-            SOCKETS[token].write_message(data)
+            try:
+                SOCKETS[token].write_message(data)
+            except Exception:
+                del SOCKETS[token]
 
 
 def main():
