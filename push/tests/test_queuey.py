@@ -32,7 +32,7 @@ class TestQueuey(unittest2.TestCase):
     def test_request(self, requests_mock):
         self.queuey.request()
         requests_mock.session.assert_called_with(
-            headers={'X-Application-Key': 'app-key'},
+            headers={'Authorization': 'Application app-key'},
             hooks={'response': self.queuey.json_response})
 
     def test_json_response(self):
@@ -57,7 +57,7 @@ class TestQueuey(unittest2.TestCase):
         post_mock.return_value = response
 
         eq_(self.queuey.new_queue(), queue)
-        post_mock.assert_called_with('/url/queue/')
+        post_mock.assert_called_with('/url')
 
     def test_new_message(self):
         self.queuey.request = mock.Mock()
@@ -69,14 +69,14 @@ class TestQueuey(unittest2.TestCase):
         post_mock.return_value = response
 
         eq_(self.queuey.new_message(queue, 'ok'), message)
-        post_mock.assert_called_with('/url/queue/%s/' % queue, 'ok')
+        post_mock.assert_called_with('/url/%s' % queue, 'ok')
 
     def test_get_messages(self):
         self.queuey.request = mock.Mock()
         get_mock = self.queuey.request.return_value.get
 
         queue = self.mock_queuey.new_queue()
-        queue_url = '/url/queue/%s/' % queue
+        queue_url = '/url/%s' % queue
 
         response = self.response(200, json.dumps({'messages': []}))
         get_mock.return_value = response

@@ -23,7 +23,7 @@ class MockQueuey(object):
     def new_message(self, queue, message):
         msg = Message(message)
         self.db[queue].append(msg)
-        return {u'key': msg.key,
+        return {u'messages': [{u'key': msg.key}],
                 u'partition': 1,
                 u'status': u'ok',
                 u'timestamp': msg.timestamp}

@@ -137,13 +137,13 @@ class ViewTest(unittest2.TestCase):
         eq_(self.queuey.get_messages(queue)[0],
             {'body': json.dumps(body),
              'timestamp': 1,
-             'key': response['key']})
+             'key': response['messages'][0]['key']})
 
         publish_mock.assert_called_with(request, mock.sentinel.user,
                                         {'queue': queue,
                                          'timestamp': 1,
                                          'body': body,
-                                         'key': response['key']})
+                                         'key': response['messages'][0]['key']})
 
     def test_valid_float(self):
         # Check the validator.
@@ -192,8 +192,8 @@ class ViewTest(unittest2.TestCase):
         queue = self.queuey.new_queue()
         self.storage.new_queue(queue, 'user', 'domain')
 
-        key1 = self.queuey.new_message(queue, 'one')['key']
-        key2 = self.queuey.new_message(queue, 'two')['key']
+        key1 = self.queuey.new_message(queue, 'one')['messages'][0]['key']
+        key2 = self.queuey.new_message(queue, 'two')['messages'][0]['key']
 
         request = Request(headers={'x-auth-token': 'user'},
                           matchdict={'queue': queue})
@@ -222,8 +222,8 @@ class ViewTest(unittest2.TestCase):
         queue = self.queuey.new_queue()
         self.storage.new_queue(queue, 'user', 'domain')
 
-        key1 = self.queuey.new_message(queue, 'one')['key']
-        key2 = self.queuey.new_message(queue, 'two')['key']
+        key1 = self.queuey.new_message(queue, 'one')['messages'][0]['key']
+        key2 = self.queuey.new_message(queue, 'two')['messages'][0]['key']
 
         request = Request(params={'since': 1},
                           headers={'x-auth-token': 'user'},
