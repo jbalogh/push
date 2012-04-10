@@ -34,8 +34,8 @@ class Push(object):
         stream.on_recv(self.recv)
 
     def recv(self, msg):
-        msg = ''.join(msg)
-        self.send(*msg.split(' ', 2)[1:])
+        key, token, data = msg
+        self.send(token, data)
 
     def send(self, token, data):
         if token in SOCKETS:
@@ -54,9 +54,9 @@ def main():
 
     ioloop.install()
     socket = zmq.Context().socket(zmq.SUB)
-    socket.connect(config.get('pubsub', 'sub'))
+    socket.connect(config.get('zeromq', 'sub'))
     socket.setsockopt(zmq.SUBSCRIBE, 'PUSH')
-    print 'listening on', config.get('pubsub', 'sub')
+    print 'SUB socket on', config.get('zeromq', 'sub')
 
     loop = ioloop.IOLoop.instance()
     websockets = config.get_map('websockets')

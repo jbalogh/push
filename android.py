@@ -43,9 +43,9 @@ def main():
 
     ioloop.install()
     socket = zmq.Context().socket(zmq.SUB)
-    socket.connect(config.get('pubsub', 'sub'))
+    socket.connect(config.get('zeromq', 'sub'))
     socket.setsockopt(zmq.SUBSCRIBE, 'PUSH')
-    print 'listening on', config.get('pubsub', 'sub')
+    print 'listening on', config.get('zeromq', 'sub')
 
     loop = ioloop.IOLoop.instance()
     c2dm = config.get_map('c2dm')

@@ -4,8 +4,8 @@ import zmq
 
 from cornice.service import Service
 
-# Process-level singleton zmq publisher socket.
-PUB_SOCKET = None
+# Process-level singleton zmq pusher socket.
+PUSH_SOCKET = None
 
 tokens = Service(name='tokens', path='/token/')
 queues = Service(name='queues', path='/queue/')
@@ -85,11 +85,12 @@ def new_message(request):
 
 def publish(request, token, message):
     """Publish the message over pubsub on the token's channel."""
-    global PUB_SOCKET
-    if PUB_SOCKET is None:
-        PUB_SOCKET = zmq.Context().socket(zmq.PUB)
-        PUB_SOCKET.bind(request.registry.settings['pubsub.pub'])
-    PUB_SOCKET.send('PUSH %s %s' % (token, json.dumps(message)))
+    global PUSH_SOCKET
+    if PUSH_SOCKET is None:
+        PUSH_SOCKET = zmq.Context().socket(zmq.PUSH)
+        PUSH_SOCKET.bind(request.registry.settings['zeromq.push'])
+    msg = ('PUSH', token, json.dumps(message))
+    PUSH_SOCKET.send_multipart(msg)
 
 
 def valid_float(request):
