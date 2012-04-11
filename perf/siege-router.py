@@ -75,7 +75,7 @@ class Stat(object):
 def sender(limit, push_addr):
     context = zmq.Context()
     push_socket = context.socket(zmq.PUSH)
-    push_socket.bind(push_addr)
+    push_socket.connect(push_addr)
 
     with Stat('Sent', limit) as stat:
         msg = ('SIEGE', 'token', 'data')

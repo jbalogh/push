@@ -43,7 +43,7 @@ def main():
 
     context = zmq.Context()
     pull_socket = context.socket(zmq.PULL)
-    pull_socket.connect(config.get('zeromq', 'pull'))
+    pull_socket.bind(config.get('zeromq', 'pull'))
     pull_stream = zmqstream.ZMQStream(pull_socket, loop)
     print 'PULL socket on', config.get('zeromq', 'pull')
 

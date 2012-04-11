@@ -88,7 +88,7 @@ def publish(request, token, message):
     global PUSH_SOCKET
     if PUSH_SOCKET is None:
         PUSH_SOCKET = zmq.Context().socket(zmq.PUSH)
-        PUSH_SOCKET.bind(request.registry.settings['zeromq.push'])
+        PUSH_SOCKET.connect(request.registry.settings['zeromq.push'])
     msg = ('PUSH', token, json.dumps(message))
     PUSH_SOCKET.send_multipart(msg)
 
