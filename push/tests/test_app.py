@@ -11,7 +11,7 @@ class AppTest(unittest2.TestCase):
 
     def setUp(self):
         p = os.path
-        ini = p.join(p.dirname(__file__), '../../etc/push-dev.ini')
+        ini = os.environ['PUSH_TEST_CONFIG']
         app = push.main({'__file__': p.abspath(ini)})
         self.testapp = webtest.TestApp(app)
 

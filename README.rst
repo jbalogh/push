@@ -20,6 +20,17 @@ Run the Server
     paster serve etc/push-dev.ini
 
 
+Testing
+-------
+::
+
+    export PUSH_TEST_CONFIG=./etc/push-dev.ini
+    nosetests
+
+If the tests appear to be stuck, you're experiencing the joy of asynchronous
+zeromq sockets.  Kill it!
+
+
 Public API
 ----------
 
