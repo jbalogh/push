@@ -8,20 +8,12 @@ Measures the throughput of router.py. This script creates:
 Processes are created with multiprocessing so there's no explicit interaction,
 though there could still be implicit interaction through shared CPU resources.
 
-Usage:
-
-    ./siege-router.py LIMIT PUSH_ADDR SUB_ADDR
-
-LIMIT: number of messages to send
-PUSH_ADDR: zeromq address to connect the PUSH socket
-SUB_ADDR: zeromq address to connect the SUB socket
-
-My results:
+My results for one sender and receiver:
     ** Average Sent Rate: 196,853 messages per second **
     ** Average Received Rate: 6,918 messages per second **
 """
-import multiprocessing
-import sys
+from argparse import ArgumentParser
+from multiprocessing import Process
 import threading
 import time
 
@@ -99,12 +91,16 @@ def receiver(limit, sub_addr):
         stat.end = time.time()
 
 
-def main(limit, push_addr, sub_addr):
+def main(limit, push_addr, sub_addr, num_senders, num_receivers):
     limit = int(limit)
-    procs = [
-        multiprocessing.Process(target=sender, args=(limit, push_addr)),
-        multiprocessing.Process(target=receiver, args=(limit, sub_addr)),
-    ]
+    procs = []
+    for _ in range(num_senders):
+        procs.append(Process(target=sender,
+                             args=(limit, push_addr)))
+    for _ in range(num_receivers):
+        procs.append(Process(target=receiver,
+                             args=(limit * num_senders, sub_addr)))
+
     for p in procs:
         p.start()
     for p in procs:
@@ -112,4 +108,18 @@ def main(limit, push_addr, sub_addr):
 
 
 if __name__ == '__main__':
-    main(*sys.argv[1:])
+    parser = ArgumentParser(description='Siege router.py')
+    arg = parser.add_argument
+    arg('limit', type=int,
+        help='number of messages to send')
+    arg('push_address',
+        help='zeromq address to connect the PUSH socket')
+    arg('subscribe_address',
+        help='zeromq address to connect the SUB socket')
+    arg('--senders', default=1, type=int,
+        help='number of sending processes')
+    arg('--receivers', default=1, type=int,
+        help='number of receiving processes')
+    args = parser.parse_args()
+    main(args.limit, args.push_address, args.subscribe_address,
+         args.senders, args.receivers)
