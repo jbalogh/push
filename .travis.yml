@@ -3,8 +3,7 @@ python: 2.7
 # https://bitbucket.org/ianb/pastescript/issue/4/
 install:
   - sudo apt-get install swig
-  - pip install paste
-  - pip install pastedeploy
-  - pip install pastescript
+  - pip install paste pastedeploy pastescript
   - pip install -r dev-reqs.txt --use-mirrors
-script: nosetests
+script:
+  - PUSH_TEST_CONFIG=./etc/push-dev.ini nosetests
