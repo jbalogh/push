@@ -1,9 +1,13 @@
 import json
+import os
 import unittest2
 
 import mock
+import zmq
 from pyramid import testing
 from nose.tools import eq_
+
+from mozsvc.config import load_into_settings
 
 from push import views
 import push.storage.mem
@@ -231,3 +235,30 @@ class ViewTest(unittest2.TestCase):
         eq_(views.get_messages(request), {
             'messages': [{'body': 'two', 'timestamp': 2, 'key': key2}],
             'last_seen': 0})
+
+
+class PublishTest(unittest2.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        settings = {}
+        load_into_settings(os.environ['PUSH_TEST_CONFIG'], settings)
+        cls.config = settings['config']
+
+        cls.pull_socket = zmq.Context().socket(zmq.PULL)
+        cls.pull_socket.setsockopt(zmq.LINGER, 0)
+        cls.pull_socket.bind(cls.config.get('zeromq', 'pull'))
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.pull_socket.close()
+
+    def test_publish(self):
+        request = mock.Mock()
+        cfg = self.config.get('zeromq', 'push')
+        request.registry.settings = {'zeromq.push': cfg}
+
+        views.publish(request, 'token', 'message')
+
+        msg = self.pull_socket.recv_multipart()
+        self.assertEqual(tuple(msg), ('PUSH', 'token', json.dumps('message')))
