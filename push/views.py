@@ -75,8 +75,9 @@ def new_message(request):
     token = request.validated['user']
 
     response = queuey.new_message(queue, json.dumps(body))
-    pub = {'timestamp': response['timestamp'],
-           'key': response['messages'][0]['key'],
+    message = response['messages'][0]
+    pub = {'timestamp': message['timestamp'],
+           'key': message['key'],
            'queue': queue,
            'body': body}
     publish(request, token, pub)

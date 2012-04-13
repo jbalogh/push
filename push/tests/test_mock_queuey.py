@@ -28,10 +28,9 @@ class TestMockQueuey(unittest2.TestCase):
     def test_new_message(self):
         queue = self.mq.new_queue()
         eq_(self.mq.new_message(queue, 'one'),
-            {'messages': [{'key': 'uuid'}],
+            {'messages': [{'timestamp': 1, 'key': 'uuid'}],
              'partition': 1,
-             'status': 'ok',
-             'timestamp': 1})
+             'status': 'ok'})
 
     def test_get_messages(self):
         queue = self.mq.new_queue()

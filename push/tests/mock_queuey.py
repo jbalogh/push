@@ -23,10 +23,9 @@ class MockQueuey(object):
     def new_message(self, queue, message):
         msg = Message(message)
         self.db[queue].append(msg)
-        return {u'messages': [{u'key': msg.key}],
+        return {u'messages': [{'timestamp': msg.timestamp, u'key': msg.key}],
                 u'partition': 1,
-                u'status': u'ok',
-                u'timestamp': msg.timestamp}
+                u'status': u'ok'}
 
     def get_messages(self, queue, since=None, limit=None, order=None):
         if since:
