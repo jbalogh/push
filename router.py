@@ -10,9 +10,6 @@ server.
 """
 from argparse import ArgumentParser
 
-import tornado.ioloop
-import tornado.web
-import tornado.websocket
 import zmq
 from zmq.eventloop import ioloop, zmqstream
 
