@@ -24,7 +24,7 @@ Testing
 -------
 ::
 
-    export PUSH_TEST_CONFIG=./etc/push-dev.ini
+    export PUSH_TEST_CONFIG=./etc/push-test.ini
     nosetests
 
 If the tests appear to be stuck, you're experiencing the joy of asynchronous
