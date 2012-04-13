@@ -9,6 +9,7 @@ class Storage(StorageBase):
         self.db = {'queues': defaultdict(dict),
                    'users': defaultdict(set),
                    'domains': defaultdict(set),
+                   'nodes': {},
                    'android': {}}
 
     def new_queue(self, queue, user, domain):
@@ -37,3 +38,17 @@ class Storage(StorageBase):
 
     def get_android_id(self, user):
         return self.db['android'][user]
+
+    def add_edge_node(self, node, num_connections):
+        self.db['nodes'][node] = num_connections
+
+    def get_edge_nodes(self, num=None):
+        """Get edge nodes sorted by ascending number of connections."""
+        # If num is None get all of them. Subtract 1 b/c zrange in inclusive.
+        items = sorted(self.db['nodes'].items(), key=lambda x: x[1])
+        nodes = [k for k, v in items]
+        return nodes if num is None else nodes[:num]
+
+    def remove_edge_node(self, node):
+        if node in self.db['nodes']:
+            del self.db['nodes'][node]

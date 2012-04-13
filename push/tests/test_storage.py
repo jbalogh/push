@@ -49,6 +49,26 @@ class StorageTest(unittest2.TestCase):
         self.storage.new_queue('queue', 'user', 'domain')
         eq_(self.storage.get_user_for_queue('queue'), 'user')
 
+    def test_add_edge_node(self):
+        self.storage.add_edge_node('a', 4)
+        self.storage.add_edge_node('b', 5)
+        self.storage.add_edge_node('c', 6)
+        eq_(self.storage.get_edge_nodes(1), ['a'])
+        eq_(self.storage.get_edge_nodes(2), ['a', 'b'])
+
+    def test_get_edge_nodes_all(self):
+        self.storage.add_edge_node('a', 4)
+        self.storage.add_edge_node('b', 5)
+        self.storage.add_edge_node('c', 6)
+        eq_(self.storage.get_edge_nodes(), ['a', 'b', 'c'])
+
+    def test_remove_edge_node(self):
+        self.storage.add_edge_node('a', 4)
+        self.storage.add_edge_node('b', 5)
+        self.storage.add_edge_node('c', 6)
+        self.storage.remove_edge_node('a')
+        eq_(self.storage.get_edge_nodes(), ['b', 'c'])
+
 
 class MemStorageTest(StorageTest):
     __test__ = True

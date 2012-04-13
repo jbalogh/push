@@ -40,14 +40,13 @@ class Storage(StorageBase):
     def get_android_id(self, user):
         return self.redis.get(self.a + user)
 
-    def set_edge_node_status(self, node, num_connections):
+    def add_edge_node(self, node, num_connections):
         self.redis.zadd(self.n, node, num_connections)
 
     def get_edge_nodes(self, num=None):
         """Get edge nodes sorted by ascending number of connections."""
-        # If num is None get all of them.
-        if num is None:
-            num = -1
+        # If num is None get all of them. Subtract 1 b/c zrange in inclusive.
+        num = -1 if num is None else num - 1
         return self.redis.zrange(self.n, 0, num)
 
     def remove_edge_node(self, node):
