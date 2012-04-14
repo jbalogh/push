@@ -6,18 +6,39 @@ Getting Started
 
     pip install -r dev-reqs.txt
 
-3. Install Queuey from https://github.com/mozilla-services/queuey.
+3. Install Queuey from https://github.com/mozilla-services/queuey and start
+   Cassandra and queuey.
 
-4. Start the server::
+4. Start all the things::
 
-    paster serve etc/push-dev.ini
+   circusd etc/circus-test.ini
+
+5. Watch it go::
+
+   python client.py http://localhost:5011
 
 
-Run the Server
---------------
-::
+The API server runs on http://localhost:5001 in dev mode and
+http://localhost:5011 in test mode.
 
-    paster serve etc/push-dev.ini
+
+Running the Server
+------------------
+
+There's a lot of moving pieces involved in the notifications service. These can
+all be controlled through `circusd etc/circus-dev.ini`. Here's what's running:
+
+`paster serve etc/push-dev.ini`
+  The main HTTP API server.
+
+`python websockets.py etc/push-dev.ini`
+  The websocket server.
+
+`python router.py etc/push-dev.ini`
+  The pubsub broker between the HTTP server and the websocket server.
+
+`python monitor.py etc/push-dev.ini`
+  A daemon that monitors the status of the websocket server.
 
 
 Testing
