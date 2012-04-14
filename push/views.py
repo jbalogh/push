@@ -11,6 +11,7 @@ tokens = Service(name='tokens', path='/token/')
 queues = Service(name='queues', path='/queue/')
 messages = Service(name='messages', path='/queue/{queue}/')
 android = Service(name='android', path='/android/')
+nodes = Service(name='nodes', path='/nodes/')
 
 
 def has_token_and_registration_id(request):
@@ -137,3 +138,9 @@ def get_messages(request):
         kwargs['since'] = request.GET['since']
     return {'messages': queuey.get_messages(queue, **kwargs),
             'last_seen': storage.get_queue_timestamp(queue)}
+
+
+@nodes.get()
+def get_nodes(request):
+    storage = request.registry['storage']
+    return {'nodes': storage.get_edge_nodes(5)}

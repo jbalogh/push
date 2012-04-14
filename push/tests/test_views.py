@@ -236,6 +236,12 @@ class ViewTest(unittest2.TestCase):
             'messages': [{'body': 'two', 'timestamp': 2, 'key': key2}],
             'last_seen': 0})
 
+    def test_get_nodes(self):
+        self.storage.add_edge_node('a', 8)
+        self.storage.add_edge_node('b', 6)
+        self.storage.add_edge_node('c', 7)
+        eq_(views.get_nodes(Request()), {'nodes': ['b', 'c', 'a']})
+
 
 class PublishTest(unittest2.TestCase):
 

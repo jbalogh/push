@@ -56,7 +56,7 @@ class WebSocket(websocket_client.WebSocket):
         self.messages.append(data)
 
 
-def main(api_url, websocket_url):
+def main(api_url):
     # This is our local store of push URLs keyed by domain.
     queues = {}
 
@@ -73,9 +73,13 @@ def main(api_url, websocket_url):
     #    to date.
     # 3. Get stored messages.
     # 4. Get list of socket servers.
+    r = http.get(api_url + '/nodes/')
+    assert r.status_code == 200
+    nodes = json.loads(r.content)['nodes']
+    print 'WebSocket nodes:', nodes
 
     # 5. Try connecting to a socket server.
-    ws = WebSocket(websocket_url, token)
+    ws = WebSocket('ws://' + nodes[0], token)
     print 'Waiting for the websocket...\n'
     wait(10, lambda: ws.is_open)
 
