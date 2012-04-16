@@ -38,11 +38,13 @@ class TestMockQueuey(unittest2.TestCase):
         self.mq.new_message(queue, 'two')
         eq_(self.mq.get_messages(queue), [
             {'body': 'two',
-             'key': 'uuid',
-             'timestamp': 2},
+             'message_id': 'uuid',
+             'partition': 1,
+             'timestamp': '2'},
             {'body': 'one',
-             'key': 'uuid',
-             'timestamp': 1},
+             'partition': 1,
+             'message_id': 'uuid',
+             'timestamp': '1'},
         ])
 
     def test_get_messages_limit(self):
@@ -51,8 +53,9 @@ class TestMockQueuey(unittest2.TestCase):
         self.mq.new_message(queue, 'two')
         eq_(self.mq.get_messages(queue, limit=1), [
             {'body': 'two',
-             'key': 'uuid',
-             'timestamp': 2},
+             'message_id': 'uuid',
+             'partition': 1,
+             'timestamp': '2'},
         ])
 
     def test_get_messages_since(self):
@@ -61,8 +64,9 @@ class TestMockQueuey(unittest2.TestCase):
         self.mq.new_message(queue, 'two')
         eq_(self.mq.get_messages(queue, since=1), [
             {'body': 'two',
-             'key': 'uuid',
-             'timestamp': 2},
+             'message_id': 'uuid',
+             'partition': 1,
+             'timestamp': '2'},
         ])
     def test_get_messages_order(self):
         queue = self.mq.new_queue()
@@ -70,9 +74,11 @@ class TestMockQueuey(unittest2.TestCase):
         self.mq.new_message(queue, 'two')
         eq_(self.mq.get_messages(queue, order='ascending'), [
             {'body': 'one',
-             'key': 'uuid',
-             'timestamp': 1},
+             'message_id': 'uuid',
+             'partition': 1,
+             'timestamp': '1'},
             {'body': 'two',
-             'key': 'uuid',
-             'timestamp': 2},
+             'message_id': 'uuid',
+             'partition': 1,
+             'timestamp': '2'},
         ])

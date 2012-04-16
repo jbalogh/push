@@ -99,7 +99,14 @@ def get_messages(request):
               'limit': min(20, request.GET.get('limit', 20))}
     if 'since' in request.GET:
         kwargs['since'] = request.GET['since']
-    return {'messages': queuey.get_messages(queue, **kwargs)}
+    messages = []
+    for message in queuey.get_messages(queue, **kwargs):
+        messages.append({'queue': queue,
+                         'body': json.loads(message['body']),
+                         'key': message['message_id'],
+                         'timestamp': message['timestamp']})
+    return {'messages': messages}
+
 
 
 @nodes.get()

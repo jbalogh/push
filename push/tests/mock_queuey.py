@@ -40,5 +40,8 @@ class MockQueuey(object):
         if limit:
             rv = rv[:limit]
 
-        return [{u'body': m.value, u'key': m.key, u'timestamp': m.timestamp}
+        return [{u'body': m.value,
+                 u'message_id': m.key,
+                 u'partition': 1,
+                 u'timestamp': str(m.timestamp)}
                 for m in rv]

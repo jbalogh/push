@@ -109,9 +109,10 @@ class ViewTest(unittest2.TestCase):
         response = views.new_message(request)
         # The body is in JSON since queuey just deals with strings.
         eq_(self.queuey.get_messages(queue)[0],
-            {'body': json.dumps(body),
-             'timestamp': 1,
-             'key': response['messages'][0]['key']})
+            {u'body': json.dumps(body),
+             u'timestamp': '1',
+             u'partition': 1,
+             u'message_id': response['messages'][0]['key']})
 
         publish_mock.assert_called_with(request, mock.sentinel.user,
                                         {'queue': queue,
@@ -142,14 +143,20 @@ class ViewTest(unittest2.TestCase):
         queue = self.queuey.new_queue()
         self.storage.new_queue(queue, 'user', 'domain')
 
-        key1 = self.queuey.new_message(queue, 'one')['messages'][0]['key']
-        key2 = self.queuey.new_message(queue, 'two')['messages'][0]['key']
+        key1 = self.queuey.new_message(queue, '{}')['messages'][0]['key']
+        key2 = self.queuey.new_message(queue, '{}')['messages'][0]['key']
 
         request = Request(headers={'x-auth-token': 'user'},
                           matchdict={'queue': queue})
         eq_(views.get_messages(request), {
-            'messages': [{'body': 'one', 'timestamp': 1, 'key': key1},
-                         {'body': 'two', 'timestamp': 2, 'key': key2}]})
+            'messages': [{'body': {},
+                          'timestamp': '1',
+                          'queue': queue,
+                          'key': key1},
+                         {'body': {},
+                          'queue': queue,
+                          'timestamp': '2',
+                          'key': key2}]})
 
     @mock.patch('push.tests.mock_queuey.time')
     def test_get_messages_since(self, time_mock):
@@ -159,14 +166,17 @@ class ViewTest(unittest2.TestCase):
         queue = self.queuey.new_queue()
         self.storage.new_queue(queue, 'user', 'domain')
 
-        key1 = self.queuey.new_message(queue, 'one')['messages'][0]['key']
-        key2 = self.queuey.new_message(queue, 'two')['messages'][0]['key']
+        key1 = self.queuey.new_message(queue, '{}')['messages'][0]['key']
+        key2 = self.queuey.new_message(queue, '{}')['messages'][0]['key']
 
         request = Request(params={'since': 1},
                           headers={'x-auth-token': 'user'},
                           matchdict={'queue': queue})
         eq_(views.get_messages(request), {
-            'messages': [{'body': 'two', 'timestamp': 2, 'key': key2}]})
+            'messages': [{'body': {},
+                          'timestamp': '2',
+                          'queue': queue,
+                          'key': key2}]})
 
     def test_get_nodes(self):
         self.storage.add_edge_node('a', 8)
