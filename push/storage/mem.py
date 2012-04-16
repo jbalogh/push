@@ -16,6 +16,13 @@ class Storage(StorageBase):
         self.db['users'][user].add(queue)
         self.db['domains'][domain].add(queue)
 
+    def get_queues(self, user):
+        rv = {}
+        for queue in self.db['users'][user]:
+            domain = self.db['queues'][queue]['domain']
+            rv[domain] = queue
+        return rv
+
     def user_owns_queue(self, user, queue):
         return queue in self.db['users'][user]
 

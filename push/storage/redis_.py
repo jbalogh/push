@@ -17,6 +17,13 @@ class Storage(StorageBase):
         self.redis.sadd(self.u + user, queue)
         self.redis.sadd(self.d + domain, queue)
 
+    def get_queues(self, user):
+        rv = {}
+        for queue in self.redis.smembers(self.u + user):
+            domain = self.redis.hget(self.q + queue, 'domain')
+            rv[domain] = queue
+        return rv
+
     def user_owns_queue(self, user, queue):
         return self.redis.sismember(self.u + user, queue)
 

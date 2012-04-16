@@ -39,6 +39,19 @@ def new_queue(request):
     return {'queue': request.route_url('/queue/{queue}/', queue=queue)}
 
 
+def has_token(request):
+    if not request.GET.get('token'):
+        return 400, 'Missing required argument: token'
+
+
+@queues.get(validators=has_token)
+def get_queues(request):
+    """Get all of the user's queues."""
+    storage = request.registry['storage']
+    return dict((k, request.route_url('/queue/{queue}/', queue=v))
+                for k, v in storage.get_queues(request.GET['token']).items())
+
+
 def queue_has_token(request):
     storage = request.registry['storage']
     queue = request.matchdict['queue']
@@ -106,7 +119,6 @@ def get_messages(request):
                          'key': message['message_id'],
                          'timestamp': message['timestamp']})
     return {'messages': messages}
-
 
 
 @nodes.get()

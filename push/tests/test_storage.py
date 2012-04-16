@@ -17,6 +17,10 @@ class StorageTest(unittest2.TestCase):
         eq_(self.storage.new_token(64), hashlib.sha1('ok').hexdigest())
         os_mock.urandom.assert_called_with(64)
 
+    def test_get_queues(self):
+        self.storage.new_queue('queue', 'user', 'domain')
+        eq_(self.storage.get_queues('user'), {'domain': 'queue'})
+
     def test_user_owns_queue(self):
         assert not self.storage.user_owns_queue('user', 'queue')
         self.storage.new_queue('queue', 'user', 'domain')

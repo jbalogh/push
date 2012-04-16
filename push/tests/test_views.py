@@ -85,6 +85,24 @@ class ViewTest(unittest2.TestCase):
         assert self.storage.domain_owns_queue('x.com', 'new-queue')
         eq_(self.storage.get_user_for_queue('new-queue'), 't')
 
+    def test_has_token(self):
+        request = Request(params={'token': 't'})
+        eq_(None, views.has_token(request))
+
+        response = views.has_token(Request())
+        assert_error(400, 'Missing required argument: token', response)
+
+    def test_get_queues(self):
+        token = views.new_token(Request())['token']
+        request = Request(post={'token': token, 'domain': 'domain'})
+        request.route_url = lambda s, **kw: s.format(**kw)
+        queue = views.new_queue(request)['queue']
+
+        request = Request(params={'token': token})
+        request.route_url = lambda s, **kw: s.format(**kw)
+        response = views.get_queues(request)
+        eq_(response, {'domain': queue})
+
     def test_queue_has_token(self):
         # Check the validator.
         request = Request(matchdict={'queue': 'queue'})
