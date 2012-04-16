@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Drive through notifications client interactions.
 """
@@ -13,7 +14,7 @@ from tornado import ioloop
 
 
 def print_request(request):
-    lines = ['%s %s' % (request.method, request.url)]
+    lines = ['%s %s' % (request.method, request.full_url)]
     lines.extend(sorted(': '.join(item) for item in request.headers.items()))
     if request.data:
         lines.extend(['', '',
@@ -54,7 +55,7 @@ class WebSocket(websocket_client.WebSocket):
 
     def on_message(self, data):
         print '>>', data, '\n'
-        self.messages.append(data)
+        self.messages.append(json.loads(data))
 
 
 def step(desc):
@@ -81,7 +82,6 @@ def main(api_url):
 
     # 2. Sync push URLs. If we were a browser, we'd want our push URLs to be up
     #    to date with the user's other clients.
-    # 3. Get stored messages.
     step('4. Get a list of socket servers')
     r = http.get(api_url + '/nodes/')
     assert r.status_code == 200
@@ -104,17 +104,33 @@ def main(api_url):
     print 'This is where the client would return the push URL to the website.'
 
     step('7. Listen for messages coming from the socket server.')
-    print 'Sending a fake message.'
-    r = http.post(queues[domain], {'title': 'fake message', 'body': 'ok'})
+    print 'Sending fake messages.'
+    http.post(queues[domain], {'title': 'message one', 'body': 'ok'})
+    assert r.status_code == 200
+    r = http.post(queues[domain], {'title': 'message two', 'body': 'ok'})
+    assert r.status_code == 200
+    r = http.post(queues[domain], {'title': 'message three', 'body': 'ok'})
     assert r.status_code == 200
 
     # Wait for convergence.
-    if not ws.messages:
+    if len(ws.messages) != 3:
         print 'Waiting on the websocket...\n'
-        wait(10, lambda: ws.messages)
+        wait(10, lambda: len(ws.messages) == 3)
 
-    assert len(ws.messages) == 1
-    print 'Got the message on the websocket.'
+    assert len(ws.messages) == 3
+    print 'Got the messages on the websocket.'
+
+    step('8. Get stored messages.')
+    print 'Check that all the messages are there.'
+    r = http.get(queues.values()[0], params={'token': token})
+    assert r.status_code == 200
+    assert json.loads(r.content)['messages'] == ws.messages
+
+    print 'We can get messages based on timestamp.'
+    ts = ws.messages[1]['timestamp']
+    r = http.get(queues.values()[0], params={'token': token, 'since': ts})
+    assert r.status_code == 200
+    assert json.loads(r.content)['messages'] == ws.messages[1:]
 
     # 8. Revoke push URLs after user action.
     # 9. Tell the server to mark messages as read after user action.
