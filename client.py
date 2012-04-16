@@ -80,8 +80,12 @@ def main(api_url):
     token = json.loads(r.content)['token']
     print 'Token:', token, '\n'
 
-    # 2. Sync push URLs. If we were a browser, we'd want our push URLs to be up
-    #    to date with the user's other clients.
+    step('2. Sync push URLs. If we were a browser, we\'d want our push URLs '
+         'to date with the user\'s other clients.')
+    r = http.get(api_url + '/queue/', params={'token': token})
+    assert r.status_code == 200
+    assert r.content == '{}'  # No push URLs yet.
+
     step('4. Get a list of socket servers')
     r = http.get(api_url + '/nodes/')
     assert r.status_code == 200
@@ -121,16 +125,21 @@ def main(api_url):
     print 'Got the messages on the websocket.'
 
     step('8. Get stored messages.')
-    print 'Check that all the messages are there.'
+    print 'Check that all the messages are there.\n'
     r = http.get(queues.values()[0], params={'token': token})
     assert r.status_code == 200
     assert json.loads(r.content)['messages'] == ws.messages
 
-    print 'We can get messages based on timestamp.'
+    print 'We can get messages based on timestamp.\n'
     ts = ws.messages[1]['timestamp']
     r = http.get(queues.values()[0], params={'token': token, 'since': ts})
     assert r.status_code == 200
     assert json.loads(r.content)['messages'] == ws.messages[1:]
+
+    print 'Check that our push URLs are availble over HTTP (for syncing).\n'
+    r = http.get(api_url + '/queue/', params={'token': token})
+    assert r.status_code == 200
+    assert json.loads(r.content) == queues
 
     # 8. Revoke push URLs after user action.
     # 9. Tell the server to mark messages as read after user action.
