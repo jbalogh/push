@@ -3,6 +3,7 @@ Drive through notifications client interactions.
 """
 import json
 import sys
+import textwrap
 import threading
 import time
 
@@ -56,6 +57,15 @@ class WebSocket(websocket_client.WebSocket):
         self.messages.append(data)
 
 
+def step(desc):
+    # Indent the text in a numbered paragraph.
+    if desc[0].isdigit():
+        joiner = '\n' + ' ' * (1 + desc.index(' '))
+    else:
+        joiner = '\n'
+    print '\n\n', joiner.join(textwrap.wrap(desc, 72)), '\n', '=' * 40
+
+
 def main(api_url):
     # This is our local store of push URLs keyed by domain.
     queues = {}
@@ -63,47 +73,48 @@ def main(api_url):
     http = requests.session(hooks={'pre_request': print_request,
                                    'response': print_response})
 
-    # 1. Get a token. This is how we identify ourselves to the service.
+    step('1. Get a token. This is how we identify ourselves to the service.')
     r = http.post(api_url + '/token/')
     assert r.status_code == 200
     token = json.loads(r.content)['token']
     print 'Token:', token, '\n'
 
     # 2. Sync push URLs. If we were a browser, we'd want our push URLs to be up
-    #    to date.
+    #    to date with the user's other clients.
     # 3. Get stored messages.
-    # 4. Get list of socket servers.
+    step('4. Get a list of socket servers')
     r = http.get(api_url + '/nodes/')
     assert r.status_code == 200
     nodes = json.loads(r.content)['nodes']
     print 'WebSocket nodes:', nodes
 
-    # 5. Try connecting to a socket server.
+    step('5. Try connecting to a socket server.')
+    print 'We identify ourselves on the websocket by sending the token.\n'
     ws = WebSocket('ws://' + nodes[0], token)
-    print 'Waiting for the websocket...\n'
     wait(10, lambda: ws.is_open)
+    print 'Connected.'
 
-    # 6. Listen for messages coming from the socket server.
-
-    # 7. Get new push URLs. If we were in a browser, we'd be doing this on
-    #    behalf of web sites.
+    step('6. Get a new push URL. If we were in a browser, we\'d be doing this '
+         'on behalf of a web site.')
     domain = 'example.com'
     r = http.post(api_url + '/queue/', {'token': token, 'domain': domain})
     assert r.status_code == 200
     queues[domain] = json.loads(r.content)['queue']
 
-    # This is where the client would return the push URL to the website.
-    # Instead, we'll send a fake message.
+    print 'This is where the client would return the push URL to the website.'
+
+    step('7. Listen for messages coming from the socket server.')
+    print 'Sending a fake message.'
     r = http.post(queues[domain], {'title': 'fake message', 'body': 'ok'})
     assert r.status_code == 200
 
     # Wait for convergence.
     if not ws.messages:
-        print 'Waiting for the websocket...\n'
+        print 'Waiting on the websocket...\n'
         wait(10, lambda: ws.messages)
 
     assert len(ws.messages) == 1
-    print 'Got the websocket message.'
+    print 'Got the message on the websocket.'
 
     # 8. Revoke push URLs after user action.
     # 9. Tell the server to mark messages as read after user action.
