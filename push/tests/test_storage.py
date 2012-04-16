@@ -17,10 +17,6 @@ class StorageTest(unittest2.TestCase):
         eq_(self.storage.new_token(64), hashlib.sha1('ok').hexdigest())
         os_mock.urandom.assert_called_with(64)
 
-    def test_android_id(self):
-        self.storage.set_android_id('user', 'droid')
-        eq_(self.storage.get_android_id('user'), 'droid')
-
     def test_set_queue_timestamp(self):
         self.storage.set_queue_timestamp('queue', 12)
         eq_(self.storage.get_queue_timestamp('queue'), 12)

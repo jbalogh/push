@@ -52,36 +52,6 @@ class ViewTest(unittest2.TestCase):
         response = views.new_token(self.request)
         eq_(response, {'token': mock.sentinel.token})
 
-    def test_has_token_and_registration_id(self):
-        # Check the validator for various problems.
-        request = Request(post={'token': ''})
-        response = views.has_token_and_registration_id(request)
-        assert_error(400, 'Missing required argument: token', response)
-
-        request = Request(post={'token': 'ok'})
-        response = views.has_token_and_registration_id(request)
-        assert_error(400, 'Missing required argument: registration_id',
-                     response)
-
-        request = Request(post={'registration_id': 'ok'})
-        response = views.has_token_and_registration_id(request)
-        assert_error(400, 'Missing required argument: token', response)
-
-        request = Request(post={'token': 'ok', 'registration_id': ''})
-        response = views.has_token_and_registration_id(request)
-        assert_error(400, 'Missing required argument: registration_id',
-                     response)
-
-        request = Request(post={'token': 't', 'registration_id': 'r'})
-        eq_(None, views.has_token_and_registration_id(request))
-
-    def test_add_droid_id(self):
-        # If we add a droid id we should be able to get it from storage.
-        request = Request(post={'token': 't', 'registration_id': 'r'})
-        eq_(views.add_droid_id(request), {'ok': 'ok'})
-
-        eq_(self.storage.get_android_id('t'), 'r')
-
     def test_has_token_and_domain(self):
         # Check the validator for various problems.
         request = Request(post={'token': ''})

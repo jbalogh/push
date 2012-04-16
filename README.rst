@@ -130,17 +130,3 @@ Client API
 
     limit: The maximum number of messages to show.
     since: If given, only return messages sent later than `since`.
-
-
-Android Client API
-------------------
-
-::
-
-    POST /android/
-
-    token=<token>&registration_id=<registration_id>
-
-    Connect an authentication token with an Android registration ID. If a token
-    has a connected Android ID the server will try to send messages to the
-    client over Android C2DM.

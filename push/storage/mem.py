@@ -9,8 +9,7 @@ class Storage(StorageBase):
         self.db = {'queues': defaultdict(dict),
                    'users': defaultdict(set),
                    'domains': defaultdict(set),
-                   'nodes': {},
-                   'android': {}}
+                   'nodes': {}}
 
     def new_queue(self, queue, user, domain):
         self.db['queues'][queue] = {'user': user, 'domain': domain}
@@ -32,12 +31,6 @@ class Storage(StorageBase):
 
     def get_queue_timestamp(self, queue):
         return float(self.db['queues'][queue].get('timestamp', 0))
-
-    def set_android_id(self, user, droid_id):
-        self.db['android'][user] = droid_id
-
-    def get_android_id(self, user):
-        return self.db['android'][user]
 
     def add_edge_node(self, node, num_connections):
         self.db['nodes'][node] = num_connections

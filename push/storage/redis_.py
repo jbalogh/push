@@ -7,7 +7,6 @@ class Storage(StorageBase):
     q = 'push:q:1:'  # Queues.
     u = 'push:u:1:'  # Users.
     d = 'push:d:1:'  # Domains.
-    a = 'push:a:1:'  # Android tokens.
     n = 'push:n:1:'  # Edge node status.
 
     def __init__(self, **kw):
@@ -33,12 +32,6 @@ class Storage(StorageBase):
 
     def get_queue_timestamp(self, queue):
         return float(self.redis.hget(self.q + queue, 'timestamp') or 0)
-
-    def set_android_id(self, user, droid_id):
-        return self.redis.set(self.a + user, droid_id)
-
-    def get_android_id(self, user):
-        return self.redis.get(self.a + user)
 
     def add_edge_node(self, node, num_connections):
         self.redis.zadd(self.n, node, num_connections)
