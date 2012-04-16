@@ -119,30 +119,6 @@ class ViewTest(unittest2.TestCase):
                                          'body': body,
                                          'key': response['messages'][0]['key']})
 
-    def test_valid_float(self):
-        # Check the validator.
-        request = Request()
-        assert_error(400, 'Need a `timestamp` parameter.',
-                     views.valid_float(request))
-
-        request = Request(post={'timestamp': 'aab'})
-        assert_error(400, '`timestamp` must be a float.',
-                     views.valid_float(request))
-
-        # Make sure a good value goes in request.validated.
-        request = Request(post={'timestamp': '1.2'})
-        eq_(views.valid_float(request), None)
-        eq_(request.validated['timestamp'], 1.2)
-
-    def test_add_timestamp(self):
-        # Check that PUTing a timestamp adds it to storage.
-        request = Request(post={'timestamp': 1.2},
-                          matchdict={'queue': 'queue'})
-        views.valid_float(request)
-        eq_(views.add_timestamp(request), {})
-
-        eq_(self.storage.get_queue_timestamp('queue'), 1.2)
-
     def test_check_token(self):
         # Check the validator.
         request = Request()
@@ -173,20 +149,7 @@ class ViewTest(unittest2.TestCase):
                           matchdict={'queue': queue})
         eq_(views.get_messages(request), {
             'messages': [{'body': 'one', 'timestamp': 1, 'key': key1},
-                         {'body': 'two', 'timestamp': 2, 'key': key2}],
-            'last_seen': 0})
-
-    def test_get_messages_last_seen(self):
-        # Check that the last_seen parameter is sent properly.
-        queue = self.queuey.new_queue()
-        self.storage.new_queue(queue, 'user', 'domain')
-
-        request = Request(headers={'x-auth-token': 'user'},
-                          matchdict={'queue': queue})
-        eq_(views.get_messages(request), {'messages': [], 'last_seen': 0})
-
-        self.storage.set_queue_timestamp(queue, 12)
-        eq_(views.get_messages(request), {'messages': [], 'last_seen': 12})
+                         {'body': 'two', 'timestamp': 2, 'key': key2}]})
 
     @mock.patch('push.tests.mock_queuey.time')
     def test_get_messages_since(self, time_mock):
@@ -203,8 +166,7 @@ class ViewTest(unittest2.TestCase):
                           headers={'x-auth-token': 'user'},
                           matchdict={'queue': queue})
         eq_(views.get_messages(request), {
-            'messages': [{'body': 'two', 'timestamp': 2, 'key': key2}],
-            'last_seen': 0})
+            'messages': [{'body': 'two', 'timestamp': 2, 'key': key2}]})
 
     def test_get_nodes(self):
         self.storage.add_edge_node('a', 8)

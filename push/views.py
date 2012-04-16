@@ -77,15 +77,6 @@ def publish(request, token, message):
     PUSH_SOCKET.send_multipart(msg)
 
 
-def valid_float(request):
-    if 'timestamp' not in request.POST:
-        return 400, 'Need a `timestamp` parameter.'
-    try:
-        request.validated['timestamp'] = float(request.POST['timestamp'])
-    except (ValueError, TypeError):
-        return 400, '`timestamp` must be a float.'
-
-
 def check_token(request):
     """The queue must be requested with a matching device token."""
     if 'x-auth-token' not in request.headers:
@@ -98,28 +89,17 @@ def check_token(request):
         return 404, 'Not Found.'
 
 
-@messages.put(validators=(check_token, valid_float))
-def add_timestamp(request):
-    storage = request.registry['storage']
-    queue = request.matchdict['queue']
-    timestamp = request.validated['timestamp']
-    storage.set_queue_timestamp(queue, timestamp)
-    return {}
-
-
 @messages.get(validators=check_token)
 def get_messages(request):
     """Fetch messages from the queue, most recent first."""
     queuey = request.registry['queuey']
-    storage = request.registry['storage']
     queue = request.matchdict['queue']
 
     kwargs = {'order': 'ascending',
               'limit': min(20, request.GET.get('limit', 20))}
     if 'since' in request.GET:
         kwargs['since'] = request.GET['since']
-    return {'messages': queuey.get_messages(queue, **kwargs),
-            'last_seen': storage.get_queue_timestamp(queue)}
+    return {'messages': queuey.get_messages(queue, **kwargs)}
 
 
 @nodes.get()

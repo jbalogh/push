@@ -26,13 +26,6 @@ class Storage(StorageBase):
     def get_user_for_queue(self, queue):
         return self.redis.hget(self.q + queue, 'user')
 
-    def set_queue_timestamp(self, queue, timestamp):
-        current = self.get_queue_timestamp(queue)
-        self.redis.hset(self.q + queue, 'timestamp', max(current, timestamp))
-
-    def get_queue_timestamp(self, queue):
-        return float(self.redis.hget(self.q + queue, 'timestamp') or 0)
-
     def add_edge_node(self, node, num_connections):
         self.redis.zadd(self.n, node, num_connections)
 

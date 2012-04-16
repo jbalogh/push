@@ -115,16 +115,13 @@ Client API
     GET /queue/<queue>/
     X-Auth-Token: <token>
 
-    >>> 200 OK {"messages": [<message>...], "last_seen": <timestamp>}
+    >>> 200 OK {"messages": [<message>...]}
 
     Get messages from the queue. The <token> used to create the queue must be
     given for authentication.
 
     The format of a message:
         TBD
-
-    The `last_seen` parameter gives the latest timestamp a client reported so
-    that other clients know which messages have been read.
 
     Optional query parameters:
 

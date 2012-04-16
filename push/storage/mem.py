@@ -25,13 +25,6 @@ class Storage(StorageBase):
     def get_user_for_queue(self, queue):
         return self.db['queues'][queue].get('user')
 
-    def set_queue_timestamp(self, queue, timestamp):
-        current = self.get_queue_timestamp(queue)
-        self.db['queues'][queue]['timestamp'] = max(current, timestamp)
-
-    def get_queue_timestamp(self, queue):
-        return float(self.db['queues'][queue].get('timestamp', 0))
-
     def add_edge_node(self, node, num_connections):
         self.db['nodes'][node] = num_connections
 
