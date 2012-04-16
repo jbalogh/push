@@ -85,7 +85,7 @@ class TestQueuey(unittest2.TestCase):
         get_mock.assert_called_with(queue_url, params={})
 
         self.queuey.get_messages(queue, since=1)
-        get_mock.assert_called_with(queue_url, params={'since_timestamp': 1})
+        get_mock.assert_called_with(queue_url, params={'since': 1})
 
 
         self.queuey.get_messages(queue, limit=2, order='asc')

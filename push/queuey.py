@@ -38,7 +38,7 @@ class Queuey(object):
         return response.json
 
     def get_messages(self, queue, since=None, limit=None, order=None):
-        keys = ('since_timestamp', 'limit', 'order')
+        keys = ('since', 'limit', 'order')
         qs = dict((k, v) for k, v in zip(keys, (since, limit, order)) if v)
         response = self.request().get(self.url + '/' + queue,
                                       params=qs)
