@@ -1,5 +1,6 @@
 import json
 
+from pyramid.httpexceptions import HTTPNotFound
 import zmq
 
 from cornice.service import Service
@@ -24,7 +25,7 @@ def has_token_and_domain(request):
     """Non-empty token and domain values must be give in the POST body."""
     for key in ('token', 'domain'):
         if not request.POST.get(key):
-            return 400, 'Missing required argument: ' + key
+            request.errors.add('body', key, 'Missing required parameter.')
 
 
 @queues.post(validators=has_token_and_domain)
@@ -41,7 +42,7 @@ def new_queue(request):
 
 def has_token(request):
     if not request.GET.get('token'):
-        return 400, 'Missing required argument: token'
+        request.errors.add('body', 'token', 'Missing required parameter.')
 
 
 @queues.get(validators=has_token)
@@ -52,23 +53,18 @@ def get_queues(request):
                 for k, v in storage.get_queues(request.GET['token']).items())
 
 
-def queue_has_token(request):
-    storage = request.registry['storage']
-    queue = request.matchdict['queue']
-    user = storage.get_user_for_queue(queue)
-    if not user:
-        return 404, 'Not Found'
-
-    request.validated['user'] = user
-
-
-@messages.post(validators=queue_has_token)
+@messages.post()
 def new_message(request):
     """Add a new message to the queue."""
     queuey = request.registry['queuey']
+    storage = request.registry['storage']
+
     queue = request.matchdict['queue']
+    token = storage.get_user_for_queue(queue)
+    if not token:
+        raise HTTPNotFound()
+
     body = dict(request.POST)
-    token = request.validated['user']
 
     response = queuey.new_message(queue, json.dumps(body))
     message = response['messages'][0]
@@ -90,23 +86,16 @@ def publish(request, token, message):
     PUSH_SOCKET.send_multipart(msg)
 
 
-def check_token(request):
-    """The queue must be requested with a matching device token."""
-    if 'x-auth-token' not in request.headers:
-        return 400, 'An X-Auth-Token header must be included.'
-
-    token = request.headers['x-auth-token']
-    storage = request.registry['storage']
-
-    if not storage.user_owns_queue(token, request.matchdict['queue']):
-        return 404, 'Not Found.'
-
-
-@messages.get(validators=check_token)
+@messages.get(validators=has_token)
 def get_messages(request):
     """Fetch messages from the queue, most recent first."""
     queuey = request.registry['queuey']
+    storage = request.registry['storage']
+
     queue = request.matchdict['queue']
+    token = request.GET['token']
+    if not storage.user_owns_queue(token, queue):
+        raise HTTPNotFound()
 
     kwargs = {'order': 'ascending',
               'limit': min(20, request.GET.get('limit', 20))}

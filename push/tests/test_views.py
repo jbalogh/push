@@ -5,6 +5,7 @@ import unittest2
 import mock
 import zmq
 from pyramid import testing
+from pyramid.httpexceptions import HTTPNotFound
 from nose.tools import eq_
 
 from mozsvc.config import load_into_settings
@@ -21,11 +22,19 @@ def assert_error(code, message, response):
 
 
 def Request(params=None, post=None, matchdict=None, headers=None):
+
+    class Errors(list):
+
+        def add(self, where, key, msg):
+            self.append((where, key, msg))
+
     request = testing.DummyRequest(params=params, post=post, headers=headers)
     if matchdict:
         request.matchdict = matchdict
     if not hasattr(request, 'validated'):
         request.validated = {}
+    if not hasattr(request, 'errors'):
+        request.errors = Errors()
     return request
 
 
@@ -55,23 +64,29 @@ class ViewTest(unittest2.TestCase):
     def test_has_token_and_domain(self):
         # Check the validator for various problems.
         request = Request(post={'token': ''})
-        response = views.has_token_and_domain(request)
-        assert_error(400, 'Missing required argument: token', response)
+        views.has_token_and_domain(request)
+        eq_(len(request.errors), 2)
+        eq_(request.errors[0][:2], ('body', 'token'))
+        eq_(request.errors[1][:2], ('body', 'domain'))
 
         request = Request(post={'token': 'ok'})
-        response = views.has_token_and_domain(request)
-        assert_error(400, 'Missing required argument: domain', response)
+        views.has_token_and_domain(request)
+        eq_(len(request.errors), 1)
+        eq_(request.errors[0][:2], ('body', 'domain'))
 
         request = Request(post={'domain': 'ok'})
-        response = views.has_token_and_domain(request)
-        assert_error(400, 'Missing required argument: token', response)
+        views.has_token_and_domain(request)
+        eq_(len(request.errors), 1)
+        eq_(request.errors[0][:2], ('body', 'token'))
 
         request = Request(post={'token': 'ok', 'domain': ''})
-        response = views.has_token_and_domain(request)
-        assert_error(400, 'Missing required argument: domain', response)
+        views.has_token_and_domain(request)
+        eq_(len(request.errors), 1)
+        eq_(request.errors[0][:2], ('body', 'domain'))
 
         request = Request(post={'token': 't', 'domain': 'r'})
-        eq_(None, views.has_token_and_domain(request))
+        views.has_token_and_domain(request)
+        eq_(len(request.errors), 0)
 
     def test_new_queue(self):
         # A new queue should be available in storage and queuey.
@@ -89,8 +104,10 @@ class ViewTest(unittest2.TestCase):
         request = Request(params={'token': 't'})
         eq_(None, views.has_token(request))
 
-        response = views.has_token(Request())
-        assert_error(400, 'Missing required argument: token', response)
+        request = Request()
+        views.has_token(request)
+        eq_(len(request.errors), 1)
+        eq_(request.errors[0][:2], ('body', 'token'))
 
     def test_get_queues(self):
         token = views.new_token(Request())['token']
@@ -103,15 +120,6 @@ class ViewTest(unittest2.TestCase):
         response = views.get_queues(request)
         eq_(response, {'domain': queue})
 
-    def test_queue_has_token(self):
-        # Check the validator.
-        request = Request(matchdict={'queue': 'queue'})
-        assert_error(404, 'Not Found', views.queue_has_token(request))
-
-        self.storage.new_queue('queue', 'user', 'domain')
-        eq_(views.queue_has_token(request), None)
-        eq_(request.validated['user'], 'user')
-
     @mock.patch('push.views.publish')
     @mock.patch('push.tests.mock_queuey.time')
     def test_new_message(self, time_mock, publish_mock):
@@ -122,7 +130,6 @@ class ViewTest(unittest2.TestCase):
 
         body = {'title': 'title', 'body': 'body'}
         request = Request(matchdict={'queue': queue}, post=body)
-        request.validated['user'] = mock.sentinel.user
 
         response = views.new_message(request)
         # The body is in JSON since queuey just deals with strings.
@@ -132,26 +139,17 @@ class ViewTest(unittest2.TestCase):
              u'partition': 1,
              u'message_id': response['messages'][0]['key']})
 
-        publish_mock.assert_called_with(request, mock.sentinel.user,
+        publish_mock.assert_called_with(request, 'user',
                                         {'queue': queue,
                                          'timestamp': 1,
                                          'body': body,
                                          'key': response['messages'][0]['key']})
 
-    def test_check_token(self):
-        # Check the validator.
-        request = Request()
-        assert_error(400, 'An X-Auth-Token header must be included.',
-                     views.check_token(request))
-
-        request = Request(headers={'x-auth-token': 'token'},
-                          matchdict={'queue': 'queue'})
-        assert_error(404, 'Not Found.', views.check_token(request))
-
-        self.storage.new_queue('queue', 'user', 'domain')
-        request = Request(headers={'x-auth-token': 'user'},
-                          matchdict={'queue': 'queue'})
-        eq_(views.check_token(request), None)
+    def test_new_message_404(self):
+        # POSTing to a queue without an associated token raises a 404.
+        with self.assertRaises(HTTPNotFound):
+            request = Request(post={}, matchdict={'queue': 'queue'})
+            views.new_message(request)
 
     @mock.patch('push.tests.mock_queuey.time')
     def test_get_messages(self, time_mock):
@@ -164,7 +162,7 @@ class ViewTest(unittest2.TestCase):
         key1 = self.queuey.new_message(queue, '{}')['messages'][0]['key']
         key2 = self.queuey.new_message(queue, '{}')['messages'][0]['key']
 
-        request = Request(headers={'x-auth-token': 'user'},
+        request = Request(params={'token': 'user'},
                           matchdict={'queue': queue})
         eq_(views.get_messages(request), {
             'messages': [{'body': {},
@@ -175,6 +173,12 @@ class ViewTest(unittest2.TestCase):
                           'queue': queue,
                           'timestamp': '2',
                           'key': key2}]})
+
+    def test_get_messages_404(self):
+        # Asking for a queue without a matching token raises a 404.
+        request = Request(params={'token': 'ok'}, matchdict={'queue': 'queue'})
+        with self.assertRaises(HTTPNotFound):
+            views.get_messages(request)
 
     @mock.patch('push.tests.mock_queuey.time')
     def test_get_messages_since(self, time_mock):
@@ -187,8 +191,7 @@ class ViewTest(unittest2.TestCase):
         key1 = self.queuey.new_message(queue, '{}')['messages'][0]['key']
         key2 = self.queuey.new_message(queue, '{}')['messages'][0]['key']
 
-        request = Request(params={'since': 1},
-                          headers={'x-auth-token': 'user'},
+        request = Request(params={'since': 1, 'token': 'user'},
                           matchdict={'queue': queue})
         eq_(views.get_messages(request), {
             'messages': [{'body': {},
