@@ -28,11 +28,11 @@ class Storage(StorageBase):
             rv[domain] = queue
         return rv
 
+    def get_queue(self, queue):
+        return self.redis.hgetall(self.q + queue)
+
     def user_owns_queue(self, user, queue):
         return self.redis.sismember(self.u + user, queue)
-
-    def domain_owns_queue(self, domain, queue):
-        return self.redis.sismember(self.d + domain, queue)
 
     def get_user_for_queue(self, queue):
         return self.redis.hget(self.q + queue, 'user')

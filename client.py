@@ -77,14 +77,15 @@ def main(api_url):
     step('1. Get a token. This is how we identify ourselves to the service.')
     r = http.post(api_url + '/token/')
     assert r.status_code == 200
-    token = json.loads(r.content)['token']
+    response = json.loads(r.content)
+    token, user_queue = response['token'], response['queue']
     print 'Token:', token, '\n'
 
     step('2. Sync push URLs. If we were a browser, we\'d want our push URLs '
          'to date with the user\'s other clients.')
     r = http.get(api_url + '/queue/', params={'token': token})
     assert r.status_code == 200
-    assert r.content == '{}'  # No push URLs yet.
+    assert json.loads(r.content) == queues  # No push URLs yet.
 
     step('4. Get a list of socket servers')
     r = http.get(api_url + '/nodes/')
@@ -126,13 +127,13 @@ def main(api_url):
 
     step('8. Get stored messages.')
     print 'Check that all the messages are there.\n'
-    r = http.get(queues.values()[0], params={'token': token})
+    r = http.get(user_queue, params={'token': token})
     assert r.status_code == 200
     assert json.loads(r.content)['messages'] == ws.messages
 
     print 'We can get messages based on timestamp.\n'
     ts = ws.messages[1]['timestamp']
-    r = http.get(queues.values()[0], params={'token': token, 'since': ts})
+    r = http.get(user_queue, params={'token': token, 'since': ts})
     assert r.status_code == 200
     assert json.loads(r.content)['messages'] == ws.messages[1:]
 
@@ -142,10 +143,10 @@ def main(api_url):
     assert json.loads(r.content) == queues
 
     step('11. Revoke push URLs after user action.')
-    r = http.delete(queues.values()[0], params={'token': token})
+    r = http.delete(queues[domain], params={'token': token})
     assert r.status_code == 200
 
-    r = http.get(queues.values()[0], params={'token': token})
+    r = http.post(queues[domain], {'title': 'message one', 'body': 'ok'})
     assert r.status_code == 404
 
     # 9. Tell the server to mark messages as read after user action.

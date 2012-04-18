@@ -10,15 +10,19 @@ PUSH_SOCKET = None
 
 tokens = Service(name='tokens', path='/token/')
 queues = Service(name='queues', path='/queue/')
-messages = Service(name='messages', path='/queue/{queue}/')
+site_queues = Service(name='site_queues', path='/queue/{queue}/')
 nodes = Service(name='nodes', path='/nodes/')
 
 
 @tokens.post()
 def new_token(request):
     """Get a new random, opaque string."""
+    queuey = request.registry['queuey']
     storage = request.registry['storage']
-    return {'token': storage.new_token()}
+    token = storage.new_token()
+    queuey.new_queue(queue_name=token)
+    return {'token': token,
+            'queue': request.route_url('/queue/{queue}/', queue=token)}
 
 
 def has_token_and_domain(request):
@@ -31,10 +35,9 @@ def has_token_and_domain(request):
 @queues.post(validators=has_token_and_domain)
 def new_queue(request):
     """Create a new queue between the given user and domain."""
-    queuey = request.registry['queuey']
     storage = request.registry['storage']
 
-    queue = queuey.new_queue()
+    queue = storage.new_token()
     token, domain = request.POST['token'], request.POST['domain']
     storage.new_queue(queue, token, domain)
     return {'queue': request.route_url('/queue/{queue}/', queue=queue)}
@@ -53,9 +56,8 @@ def get_queues(request):
                 for k, v in storage.get_queues(request.GET['token']).items())
 
 
-@messages.delete(validators=has_token)
+@site_queues.delete(validators=has_token)
 def delete_queue(request):
-    queuey = request.registry['queuey']
     storage = request.registry['storage']
 
     token = request.GET['token']
@@ -63,12 +65,11 @@ def delete_queue(request):
     if not (token and storage.user_owns_queue(token, queue)):
         return HTTPNotFound()
 
-    queuey.delete_queue(queue)
     storage.delete_queue(token, queue)
     return {'queue': request.route_url('/queue/{queue}/', queue=queue)}
 
 
-@messages.post()
+@site_queues.post()
 def new_message(request):
     """Add a new message to the queue."""
     queuey = request.registry['queuey']
@@ -80,8 +81,10 @@ def new_message(request):
         return HTTPNotFound()
 
     body = dict(request.POST)
+    json_body = json.dumps({'queue': queue, 'body': body})
 
-    response = queuey.new_message(queue, json.dumps(body))
+    # Add it to the users's queue.
+    response = queuey.new_message(token, json_body)
     message = response['messages'][0]
     pub = {'timestamp': message['timestamp'],
            'key': message['key'],
@@ -101,28 +104,29 @@ def publish(request, token, message):
     PUSH_SOCKET.send_multipart(msg)
 
 
-@messages.get(validators=has_token)
+@site_queues.get()
 def get_messages(request):
     """Fetch messages from the queue, most recent first."""
     queuey = request.registry['queuey']
-    storage = request.registry['storage']
-
     queue = request.matchdict['queue']
-    token = request.GET['token']
-    if not storage.user_owns_queue(token, queue):
-        return HTTPNotFound()
 
     kwargs = {'order': 'ascending',
               'limit': min(20, request.GET.get('limit', 20))}
     if 'since' in request.GET:
         kwargs['since'] = request.GET['since']
-    messages = []
-    for message in queuey.get_messages(queue, **kwargs):
-        messages.append({'queue': queue,
-                         'body': json.loads(message['body']),
-                         'key': message['message_id'],
-                         'timestamp': message['timestamp']})
-    return {'messages': messages}
+    try:
+        messages = queuey.get_messages(queue, **kwargs)
+    except Exception:
+        return HTTPNotFound()
+
+    rv = []
+    for message in messages:
+        body = json.loads(message['body'])
+        rv.append({'body': body['body'],
+                   'queue': body['queue'],
+                   'key': message['message_id'],
+                   'timestamp': message['timestamp']})
+    return {'messages': rv}
 
 
 @nodes.get()

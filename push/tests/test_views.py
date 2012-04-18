@@ -51,10 +51,10 @@ class ViewTest(unittest2.TestCase):
         # POSTing gets a new token.
         storage_mock = mock.Mock()
         self.request.registry['storage'] = storage_mock
-        storage_mock.new_token.return_value = mock.sentinel.token
+        storage_mock.new_token.return_value = 'TOKEN'
 
         response = views.new_token(self.request)
-        eq_(response, {'token': mock.sentinel.token})
+        eq_(response, {'token': 'TOKEN', 'queue': '/queue/TOKEN/'})
 
     def test_has_token_and_domain(self):
         # Check the validator for various problems.
@@ -84,14 +84,13 @@ class ViewTest(unittest2.TestCase):
         eq_(len(request.errors), 0)
 
     def test_new_queue(self):
-        # A new queue should be available in storage and queuey.
-        self.queuey.new_queue = lambda: 'new-queue'
+        # A new queue should be available in storage.
+        self.storage.new_token = lambda: 'new-queue'
         request = Request(post={'token': 't', 'domain': 'x.com'})
         response = views.new_queue(request)
         eq_(response, {'queue': '/queue/new-queue/'})
 
         assert self.storage.user_owns_queue('t', 'new-queue')
-        assert self.storage.domain_owns_queue('x.com', 'new-queue')
         eq_(self.storage.get_user_for_queue('new-queue'), 't')
 
     def test_delete_queue(self):
@@ -136,26 +135,28 @@ class ViewTest(unittest2.TestCase):
     @mock.patch('push.tests.mock_queuey.time')
     def test_new_message(self, time_mock, publish_mock):
         # New messages should be in queuey and pubsub.
+        token = views.new_token(Request(post={}))['token']
         time_mock.time.return_value = 1
         queue = self.queuey.new_queue()
-        self.storage.new_queue(queue, 'user', 'domain')
+        self.storage.new_queue(queue, token, 'domain')
 
         body = {'title': 'title', 'body': 'body'}
         request = Request(matchdict={'queue': queue}, post=body)
-
         response = views.new_message(request)
+
         # The body is in JSON since queuey just deals with strings.
-        eq_(self.queuey.get_messages(queue)[0],
-            {u'body': json.dumps(body),
+        self.assertDictEqual(
+            self.queuey.get_messages(token)[0],
+            {u'body': json.dumps({'queue': queue, 'body': body}),
              u'timestamp': '1',
              u'partition': 1,
              u'message_id': response['messages'][0]['key']})
 
-        publish_mock.assert_called_with(request, 'user',
-                                        {'queue': queue,
-                                         'timestamp': 1,
-                                         'body': body,
-                                         'key': response['messages'][0]['key']})
+        publish_mock.assert_called_with(
+            request, token, {'queue': queue,
+                             'timestamp': 1,
+                             'body': body,
+                             'key': response['messages'][0]['key']})
 
     def test_new_message_404(self):
         # POSTing to a queue without an associated token returns a 404.
@@ -170,8 +171,9 @@ class ViewTest(unittest2.TestCase):
         queue = self.queuey.new_queue()
         self.storage.new_queue(queue, 'user', 'domain')
 
-        key1 = self.queuey.new_message(queue, '{}')['messages'][0]['key']
-        key2 = self.queuey.new_message(queue, '{}')['messages'][0]['key']
+        msg = json.dumps({'queue': queue, 'body': {}})
+        key1 = self.queuey.new_message(queue, msg)['messages'][0]['key']
+        key2 = self.queuey.new_message(queue, msg)['messages'][0]['key']
 
         request = Request(params={'token': 'user'},
                           matchdict={'queue': queue})
@@ -198,8 +200,9 @@ class ViewTest(unittest2.TestCase):
         queue = self.queuey.new_queue()
         self.storage.new_queue(queue, 'user', 'domain')
 
-        key1 = self.queuey.new_message(queue, '{}')['messages'][0]['key']
-        key2 = self.queuey.new_message(queue, '{}')['messages'][0]['key']
+        msg = json.dumps({'queue': queue, 'body': {}})
+        key1 = self.queuey.new_message(queue, msg)['messages'][0]['key']
+        key2 = self.queuey.new_message(queue, msg)['messages'][0]['key']
 
         request = Request(params={'since': 1, 'token': 'user'},
                           matchdict={'queue': queue})

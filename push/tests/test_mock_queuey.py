@@ -25,6 +25,12 @@ class TestMockQueuey(unittest2.TestCase):
         eq_(self.mq.new_queue(), 'uuid')
         eq_(self.mq.new_queue(), 'uuid')
 
+    def test_delete_queue(self):
+        self.mq.new_queue(queue_name='x')
+        assert 'x' in self.mq.db
+        self.mq.delete_queue('x')
+        assert 'x' not in self.mq.db
+
     def test_new_message(self):
         queue = self.mq.new_queue()
         eq_(self.mq.new_message(queue, 'one'),
@@ -68,6 +74,7 @@ class TestMockQueuey(unittest2.TestCase):
              'partition': 1,
              'timestamp': '2'},
         ])
+
     def test_get_messages_order(self):
         queue = self.mq.new_queue()
         self.mq.new_message(queue, 'one')

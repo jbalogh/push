@@ -28,8 +28,9 @@ class Queuey(object):
         else:
             raise QueueyException(response)
 
-    def new_queue(self):
-        response = self.request().post(self.url)
+    def new_queue(self, queue_name=None):
+        data = {'queue_name': queue_name} if queue_name else None
+        response = self.request().post(self.url, data=data)
         return response.json['queue_name']
 
     def delete_queue(self, queue):

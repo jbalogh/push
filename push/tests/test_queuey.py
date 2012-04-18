@@ -57,7 +57,7 @@ class TestQueuey(unittest2.TestCase):
         post_mock.return_value = response
 
         eq_(self.queuey.new_queue(), queue)
-        post_mock.assert_called_with('/url')
+        post_mock.assert_called_with('/url', data=None)
 
     def test_delete_queue(self):
         self.queuey.request = mock.Mock()

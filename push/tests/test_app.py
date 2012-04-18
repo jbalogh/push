@@ -17,4 +17,6 @@ class AppTest(unittest2.TestCase):
 
     def test_token(self):
         self.testapp.get('/token/', status=405)
-        self.testapp.post('/token/', status=200)
+
+    def test_new_queue(self):
+        self.testapp.post('/queue/', {'token': 't', 'domain': 'd'})

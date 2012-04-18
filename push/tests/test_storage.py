@@ -21,6 +21,11 @@ class StorageTest(unittest2.TestCase):
         self.storage.new_queue('queue', 'user', 'domain')
         eq_(self.storage.get_queues('user'), {'domain': 'queue'})
 
+    def test_get_queue(self):
+        self.storage.new_queue('queue', 'user', 'domain')
+        eq_(self.storage.get_queue('queue'),
+            {'user': 'user', 'domain': 'domain'})
+
     def test_delete_queue(self):
         # Fail gracefullly.
         self.storage.delete_queue('x', 'y')
@@ -34,11 +39,6 @@ class StorageTest(unittest2.TestCase):
         assert not self.storage.user_owns_queue('user', 'queue')
         self.storage.new_queue('queue', 'user', 'domain')
         assert self.storage.user_owns_queue('user', 'queue')
-
-    def test_domain_owns_queue(self):
-        assert not self.storage.domain_owns_queue('domain', 'queue')
-        self.storage.new_queue('queue', 'user', 'domain')
-        assert self.storage.domain_owns_queue('domain', 'queue')
 
     def test_get_user_for_queue(self):
         eq_(self.storage.get_user_for_queue('queue'), None)

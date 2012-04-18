@@ -15,8 +15,8 @@ class MockQueuey(object):
     def __init__(self):
         self.db = {}
 
-    def new_queue(self):
-        queue = unicode(uuid.uuid4().hex)
+    def new_queue(self, queue_name=None):
+        queue = queue_name or unicode(uuid.uuid4().hex)
         self.db[queue] = []
         return queue
 
