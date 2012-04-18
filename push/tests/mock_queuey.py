@@ -20,6 +20,10 @@ class MockQueuey(object):
         self.db[queue] = []
         return queue
 
+    def delete_queue(self, queue):
+        if queue in self.db:
+            del self.db[queue]
+
     def new_message(self, queue, message):
         msg = Message(message)
         self.db[queue].append(msg)

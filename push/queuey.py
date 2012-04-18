@@ -32,6 +32,10 @@ class Queuey(object):
         response = self.request().post(self.url)
         return response.json['queue_name']
 
+    def delete_queue(self, queue):
+        response = self.request().delete(self.url + '/' + queue)
+        return response.json
+
     def new_message(self, queue, message):
         response = self.request().post(self.url + '/' + queue,
                                        message)

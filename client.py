@@ -141,7 +141,13 @@ def main(api_url):
     assert r.status_code == 200
     assert json.loads(r.content) == queues
 
-    # 8. Revoke push URLs after user action.
+    step('11. Revoke push URLs after user action.')
+    r = http.delete(queues.values()[0], params={'token': token})
+    assert r.status_code == 200
+
+    r = http.get(queues.values()[0], params={'token': token})
+    assert r.status_code == 404
+
     # 9. Tell the server to mark messages as read after user action.
     # 10. Mark messages as read when the server notifies us.
 

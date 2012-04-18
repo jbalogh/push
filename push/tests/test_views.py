@@ -5,7 +5,6 @@ import unittest2
 import mock
 import zmq
 from pyramid import testing
-from pyramid.httpexceptions import HTTPNotFound
 from nose.tools import eq_
 
 from mozsvc.config import load_into_settings
@@ -16,11 +15,6 @@ import push.storage.mem
 from mock_queuey import MockQueuey
 
 
-def assert_error(code, message, response):
-    eq_(code, response[0])
-    eq_(message, response[1])
-
-
 def Request(params=None, post=None, matchdict=None, headers=None):
 
     class Errors(list):
@@ -29,6 +23,7 @@ def Request(params=None, post=None, matchdict=None, headers=None):
             self.append((where, key, msg))
 
     request = testing.DummyRequest(params=params, post=post, headers=headers)
+    request.route_url = lambda s, **kw: s.format(**kw)
     if matchdict:
         request.matchdict = matchdict
     if not hasattr(request, 'validated'):
@@ -92,13 +87,32 @@ class ViewTest(unittest2.TestCase):
         # A new queue should be available in storage and queuey.
         self.queuey.new_queue = lambda: 'new-queue'
         request = Request(post={'token': 't', 'domain': 'x.com'})
-        request.route_url = lambda s, **kw: s.format(**kw)
         response = views.new_queue(request)
         eq_(response, {'queue': '/queue/new-queue/'})
 
         assert self.storage.user_owns_queue('t', 'new-queue')
         assert self.storage.domain_owns_queue('x.com', 'new-queue')
         eq_(self.storage.get_user_for_queue('new-queue'), 't')
+
+    def test_delete_queue(self):
+        request = Request(post={'token': 't', 'domain': 'x.com'})
+        queue = filter(None, views.new_queue(request)['queue'].split('/'))[-1]
+
+        request = Request(params={'token': 't'}, matchdict={'queue': queue})
+        views.delete_queue(request)
+        eq_(views.get_queues(Request(params={'token': 't'})), {})
+
+    def test_delete_queue_404(self):
+        request = Request(post={'token': 't', 'domain': 'x.com'})
+        queue = filter(None, views.new_queue(request)['queue'].split('/'))[-1]
+
+        # A valid token with an invalid queue gets a 404.
+        request = Request(params={'token': 't'}, matchdict={'queue': 'x'})
+        eq_(views.delete_queue(request).code, 404)
+
+        # An invalid token with a valid queue gets a 404.
+        request = Request(params={'token': 'x'}, matchdict={'queue': queue})
+        eq_(views.delete_queue(request).code, 404)
 
     def test_has_token(self):
         request = Request(params={'token': 't'})
@@ -112,11 +126,9 @@ class ViewTest(unittest2.TestCase):
     def test_get_queues(self):
         token = views.new_token(Request())['token']
         request = Request(post={'token': token, 'domain': 'domain'})
-        request.route_url = lambda s, **kw: s.format(**kw)
         queue = views.new_queue(request)['queue']
 
         request = Request(params={'token': token})
-        request.route_url = lambda s, **kw: s.format(**kw)
         response = views.get_queues(request)
         eq_(response, {'domain': queue})
 
@@ -146,10 +158,9 @@ class ViewTest(unittest2.TestCase):
                                          'key': response['messages'][0]['key']})
 
     def test_new_message_404(self):
-        # POSTing to a queue without an associated token raises a 404.
-        with self.assertRaises(HTTPNotFound):
-            request = Request(post={}, matchdict={'queue': 'queue'})
-            views.new_message(request)
+        # POSTing to a queue without an associated token returns a 404.
+        request = Request(post={}, matchdict={'queue': 'queue'})
+        eq_(views.new_message(request).code, 404)
 
     @mock.patch('push.tests.mock_queuey.time')
     def test_get_messages(self, time_mock):
@@ -175,10 +186,9 @@ class ViewTest(unittest2.TestCase):
                           'key': key2}]})
 
     def test_get_messages_404(self):
-        # Asking for a queue without a matching token raises a 404.
+        # Asking for a queue without a matching token returns a 404.
         request = Request(params={'token': 'ok'}, matchdict={'queue': 'queue'})
-        with self.assertRaises(HTTPNotFound):
-            views.get_messages(request)
+        eq_(views.get_messages(request).code, 404)
 
     @mock.patch('push.tests.mock_queuey.time')
     def test_get_messages_since(self, time_mock):

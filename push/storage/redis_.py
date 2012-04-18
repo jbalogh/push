@@ -17,6 +17,10 @@ class Storage(StorageBase):
         self.redis.sadd(self.u + user, queue)
         self.redis.sadd(self.d + domain, queue)
 
+    def delete_queue(self, user, queue):
+        self.redis.delete(self.q + queue)
+        self.redis.srem(self.u + user, queue)
+
     def get_queues(self, user):
         rv = {}
         for queue in self.redis.smembers(self.u + user):
@@ -38,7 +42,7 @@ class Storage(StorageBase):
 
     def get_edge_nodes(self, num=None):
         """Get edge nodes sorted by ascending number of connections."""
-        # If num is None get all of them. Subtract 1 b/c zrange in inclusive.
+        # If num is None get all of them. Subtract 1 b/c zrange is inclusive.
         num = -1 if num is None else num - 1
         return self.redis.zrange(self.n, 0, num)
 

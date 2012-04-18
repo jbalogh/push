@@ -16,6 +16,11 @@ class Storage(StorageBase):
         self.db['users'][user].add(queue)
         self.db['domains'][domain].add(queue)
 
+    def delete_queue(self, user, queue):
+        if queue in self.db['queues']:
+            del self.db['queues'][queue]
+            self.db['users'][user].remove(queue)
+
     def get_queues(self, user):
         rv = {}
         for queue in self.db['users'][user]:

@@ -59,6 +59,13 @@ class TestQueuey(unittest2.TestCase):
         eq_(self.queuey.new_queue(), queue)
         post_mock.assert_called_with('/url')
 
+    def test_delete_queue(self):
+        self.queuey.request = mock.Mock()
+        delete_mock = self.queuey.request.return_value.delete
+
+        self.queuey.delete_queue('queue')
+        delete_mock.assert_called_with('/url/queue')
+
     def test_new_message(self):
         self.queuey.request = mock.Mock()
         post_mock = self.queuey.request.return_value.post
@@ -86,7 +93,6 @@ class TestQueuey(unittest2.TestCase):
 
         self.queuey.get_messages(queue, since=1)
         get_mock.assert_called_with(queue_url, params={'since': 1})
-
 
         self.queuey.get_messages(queue, limit=2, order='asc')
         get_mock.assert_called_with(queue_url,

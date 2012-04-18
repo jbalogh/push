@@ -53,6 +53,21 @@ def get_queues(request):
                 for k, v in storage.get_queues(request.GET['token']).items())
 
 
+@messages.delete(validators=has_token)
+def delete_queue(request):
+    queuey = request.registry['queuey']
+    storage = request.registry['storage']
+
+    token = request.GET['token']
+    queue = request.matchdict['queue']
+    if not (token and storage.user_owns_queue(token, queue)):
+        return HTTPNotFound()
+
+    queuey.delete_queue(queue)
+    storage.delete_queue(token, queue)
+    return {'queue': request.route_url('/queue/{queue}/', queue=queue)}
+
+
 @messages.post()
 def new_message(request):
     """Add a new message to the queue."""
@@ -62,7 +77,7 @@ def new_message(request):
     queue = request.matchdict['queue']
     token = storage.get_user_for_queue(queue)
     if not token:
-        raise HTTPNotFound()
+        return HTTPNotFound()
 
     body = dict(request.POST)
 
@@ -95,7 +110,7 @@ def get_messages(request):
     queue = request.matchdict['queue']
     token = request.GET['token']
     if not storage.user_owns_queue(token, queue):
-        raise HTTPNotFound()
+        return HTTPNotFound()
 
     kwargs = {'order': 'ascending',
               'limit': min(20, request.GET.get('limit', 20))}
