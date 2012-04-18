@@ -154,7 +154,7 @@ class ViewTest(unittest2.TestCase):
 
         publish_mock.assert_called_with(
             request, token, {'queue': queue,
-                             'timestamp': 1,
+                             'timestamp': '1',
                              'body': body,
                              'key': response['messages'][0]['key']})
 
@@ -162,6 +162,37 @@ class ViewTest(unittest2.TestCase):
         # POSTing to a queue without an associated token returns a 404.
         request = Request(post={}, matchdict={'queue': 'queue'})
         eq_(views.new_message(request).code, 404)
+
+    @mock.patch('push.views.publish')
+    def test_mark_message_read(self, publish_mock):
+        # Check that we can mark a message as read.
+        token = views.new_token(Request(post={}))['token']
+        request = Request(post={'action': 'read', 'key': 'key'},
+                          matchdict={'queue': token})
+        eq_(views.new_message(request)['status'], 'ok')
+
+    def test_mark_message_read_no_key(self):
+        request = Request(post={'action': 'read'})
+        eq_(views.new_message(request).code, 404)
+
+    @mock.patch('push.views.publish')
+    def test_get_message_read(self, publish_mock):
+        # Check the format of the read message marker.
+        token = views.new_token(Request(post={}))['token']
+        request = Request(post={'action': 'read', 'key': 'key'},
+                          matchdict={'queue': token})
+        response = views.new_message(request)['messages'][0]
+
+        req = Request(matchdict={'queue': token})
+        self.assertListEqual(views.get_messages(req)['messages'],
+                             [{'body': {'read': 'key'},
+                               'queue': token,
+                               'key': response['key'],
+                               'timestamp': str(response['timestamp'])}])
+
+        # The format should match the pubsub'd message.
+        expected = views.get_messages(req)['messages'][0]
+        publish_mock.assert_called_with(request, token, expected)
 
     @mock.patch('push.tests.mock_queuey.time')
     def test_get_messages(self, time_mock):

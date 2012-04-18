@@ -1,6 +1,7 @@
 import json
 
 from pyramid.httpexceptions import HTTPNotFound
+from tornado import escape
 import zmq
 
 from cornice.service import Service
@@ -72,6 +73,9 @@ def delete_queue(request):
 @site_queues.post()
 def new_message(request):
     """Add a new message to the queue."""
+    if request.POST.get('action') == 'read':  # How lame is this?
+        return mark_message_read(request)
+
     queuey = request.registry['queuey']
     storage = request.registry['storage']
 
@@ -94,13 +98,35 @@ def new_message(request):
     return response
 
 
+def mark_message_read(request):
+    key = request.POST.get('key')
+    if not key:
+        return HTTPNotFound()
+
+    queuey = request.registry['queuey']
+    queue = request.matchdict['queue']
+
+    # TODO: queuey 404
+
+    body = {'read': key}
+    json_body = json.dumps({'queue': queue, 'body': body})
+    response = queuey.new_message(queue, json_body)
+    message = response['messages'][0]
+    pub = {'timestamp': message['timestamp'],
+           'key': message['key'],
+           'queue': queue,
+           'body': body}
+    publish(request, queue, pub)
+    return response
+
+
 def publish(request, token, message):
     """Publish the message over pubsub on the token's channel."""
     global PUSH_SOCKET
     if PUSH_SOCKET is None:
         PUSH_SOCKET = zmq.Context().socket(zmq.PUSH)
         PUSH_SOCKET.connect(request.registry.settings['zeromq.push'])
-    msg = ('PUSH', token, json.dumps(message))
+    msg = ('PUSH', escape.utf8(token), json.dumps(message))
     PUSH_SOCKET.send_multipart(msg)
 
 

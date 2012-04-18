@@ -109,8 +109,8 @@ def main(api_url):
     print 'This is where the client would return the push URL to the website.'
 
     step('7. Listen for messages coming from the socket server.')
-    print 'Sending fake messages.'
-    http.post(queues[domain], {'title': 'message one', 'body': 'ok'})
+    print 'Sending fake messages.\n'
+    r = http.post(queues[domain], {'title': 'message one', 'body': 'ok'})
     assert r.status_code == 200
     r = http.post(queues[domain], {'title': 'message two', 'body': 'ok'})
     assert r.status_code == 200
@@ -142,6 +142,32 @@ def main(api_url):
     assert r.status_code == 200
     assert json.loads(r.content) == queues
 
+    step('9. Tell the server to mark messages as read after user action.')
+    print 'Clients would send this after they see the user read a message.\n'
+    r = http.post(user_queue,
+                  {'action': 'read', 'key': ws.messages[0]['key']})
+    assert r.status_code == 200
+
+    step('10. Mark messages as read when the server notifies us.')
+    print 'We can see which messages were read over the websocket.\n'
+    # Wait for convergence.
+    if len(ws.messages) != 4:
+        print 'Waiting on the websocket...\n'
+        wait(10, lambda: len(ws.messages) == 4)
+    print ws.messages[-1], '\n'
+
+    print 'And if we check over HTTP we\'ll see the new activity.\n'
+    # Get the timestamp of the message before the read marker.
+    ts = ws.messages[-2]['timestamp']
+    r = http.get(user_queue, params={'token': token, 'since': ts})
+    assert r.status_code == 200
+    messages = json.loads(r.content)['messages']
+    assert len(messages) == 2  # The last message + the read marker.
+    # We see the message we sent.
+    assert messages[-1]['body'] == {'read': ws.messages[0]['key']}
+    # The websocket and HTTP formats match.
+    assert messages[-1] == ws.messages[-1]
+
     step('11. Revoke push URLs after user action.')
     r = http.delete(queues[domain], params={'token': token})
     assert r.status_code == 200
@@ -149,8 +175,7 @@ def main(api_url):
     r = http.post(queues[domain], {'title': 'message one', 'body': 'ok'})
     assert r.status_code == 404
 
-    # 9. Tell the server to mark messages as read after user action.
-    # 10. Mark messages as read when the server notifies us.
+    print 'All good!'
 
 
 if __name__ == '__main__':

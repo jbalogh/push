@@ -34,7 +34,7 @@ class TestMockQueuey(unittest2.TestCase):
     def test_new_message(self):
         queue = self.mq.new_queue()
         eq_(self.mq.new_message(queue, 'one'),
-            {'messages': [{'timestamp': 1, 'key': 'uuid'}],
+            {'messages': [{'timestamp': '1', 'key': 'uuid'}],
              'partition': 1,
              'status': 'ok'})
 
