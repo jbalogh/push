@@ -30,14 +30,9 @@ class SocketHandler(tornado.websocket.WebSocketHandler):
 
     def on_close(self):
         global CONNECTIONS
-        CONNECTIONS -= 1
+        CONNECTIONS = max(CONNECTIONS - 1, 0)
         if self.token and self.token in SOCKETS:
             del SOCKETS[self.token]
-
-
-application = tornado.web.Application([
-    ('.*', SocketHandler),
-])
 
 
 class Push(object):
@@ -50,18 +45,25 @@ class Push(object):
         self.send(token, data)
 
     def send(self, token, data):
+        global CONNECTIONS
         if token in SOCKETS:
             try:
                 SOCKETS[token].write_message(data)
             except Exception:
                 del SOCKETS[token]
+                CONNECTIONS = max(CONNECTIONS - 1, 0)
 
 
 def report_status(storage, ip):
     storage.add_edge_node(ip, CONNECTIONS)
 
 
-def main():
+application = tornado.web.Application([
+    ('.*', SocketHandler),
+])
+
+
+def main():  # pragma: no cover
     parser = ArgumentParser('Pubsub listener pushing to websockets.')
     parser.add_argument('config', help='path to the config file')
     args, settings = parser.parse_args(), {}
@@ -95,4 +97,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main()  # pragma: no cover
