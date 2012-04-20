@@ -15,14 +15,17 @@ import push.storage.mem
 from mock_queuey import MockQueuey
 
 
-def Request(params=None, post=None, matchdict=None, headers=None):
+def Request(params=None, post=None, matchdict=None, headers=None, **kw):
 
     class Errors(list):
 
         def add(self, where, key, msg):
             self.append((where, key, msg))
 
-    request = testing.DummyRequest(params=params, post=post, headers=headers)
+    testing.DummyRequest.json_body = property(lambda s: json.loads(s.body))
+
+    request = testing.DummyRequest(params=params, post=post,
+                                   headers=headers, **kw)
     request.route_url = lambda s, **kw: s.format(**kw)
     if matchdict:
         request.matchdict = matchdict
@@ -142,6 +145,7 @@ class ViewTest(unittest2.TestCase):
 
         body = {'title': 'title', 'body': 'body'}
         request = Request(matchdict={'queue': queue}, post=body)
+        views.message_validator(request)
         response = views.new_message(request)
 
         # The body is in JSON since queuey just deals with strings.
@@ -157,6 +161,76 @@ class ViewTest(unittest2.TestCase):
                              'timestamp': '1',
                              'body': body,
                              'key': response['messages'][0]['key']})
+
+    @mock.patch('push.views.publish')
+    def test_new_message_json(self, publish_mock):
+        # A new message coming through as JSON works fine.
+        token = views.new_token(Request(post={}))['token']
+        queue = self.storage.new_token()
+        self.storage.new_queue(queue, token, 'domain')
+
+        body = {'title': 'title', 'body': 'body'}
+        request = Request(matchdict={'queue': queue},
+                          body=json.dumps(body))
+
+        views.message_validator(request)
+        response = views.new_message(request)
+        message = response['messages'][0]
+        publish_mock.assert_called_with(
+            request, token, {'queue': queue,
+                             'timestamp': message['timestamp'],
+                             'body': body,
+                             'key': message['key']})
+
+    def test_message_validator_urlencoded(self):
+        # Messages can be form-urlencoded.
+        request = Request(post={'title': 'hi'})
+        views.message_validator(request)
+        eq_(request.validated['message'], {'title': 'hi'})
+        eq_(request.errors, [])
+
+    def test_message_validator_json(self):
+        # Messages can be JSON.
+        request = Request(body=json.dumps({'title': 'hi'}))
+        views.message_validator(request)
+        eq_(request.validated['message'], {'title': 'hi'})
+        eq_(request.errors, [])
+
+    def test_message_validator_no_body(self):
+        # A message with no body is invalid.
+        request = Request(post={})
+        views.message_validator(request)
+        assert 'message' not in request.validated
+        eq_(len(request.errors), 1)
+        eq_(request.errors[0][:-1], ('body', 'body'))
+
+    def test_message_validator_action_read(self):
+        # No validation happens if action=read.
+        request = Request(post={'action': 'read', 'key': 'k'})
+        views.message_validator(request)
+        assert 'message' not in request.validated
+        eq_(request.errors, [])
+
+    def test_message_validator_invalid_key(self):
+        # Only valid keys are passed to the view.
+        valid = {'title': 'title',
+                 'body': 'body',
+                 'actionUrl': 'actionUrl',
+                 'replaceId': 'replaceId'}
+
+        # All our valid keys make it through.
+        request = Request(post=valid)
+        views.message_validator(request)
+        eq_(request.validated['message'], valid)
+        eq_(request.errors, [])
+
+        # Invalid keys are silently discarded.
+        invalid = dict(valid)
+        invalid['bad'] = 'bad'
+        request = Request(post=invalid)
+        views.message_validator(request)
+        eq_(request.validated['message'], valid)
+        eq_(request.errors, [])
 
     def test_new_message_404(self):
         # POSTing to a queue without an associated token returns a 404.

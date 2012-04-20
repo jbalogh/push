@@ -70,7 +70,32 @@ def delete_queue(request):
     return {'queue': request.route_url('/queue/{queue}/', queue=queue)}
 
 
-@site_queues.post()
+def message_validator(request):
+    # Abort message validation if we're marking a message as read.
+    if request.POST.get('action') == 'read':
+        return
+
+    # Try to get the body as form-urlencoded or json.
+    body = None
+    if request.POST:
+        body = dict(request.POST)
+    else:
+        try:
+            body = request.json_body
+        except Exception:
+            pass
+
+    if not body:
+        msg = 'Request could not be decoded as json or form-urlencoded.'
+        return request.errors.add('body', 'body', msg)
+
+    # These are the keys we'll accept for messages.
+    VALID_KEYS = 'title', 'body', 'actionUrl', 'replaceId'
+    request.validated['message'] = dict((k, v) for k, v in body.items()
+                                        if k in VALID_KEYS)
+
+
+@site_queues.post(validators=message_validator)
 def new_message(request):
     """Add a new message to the queue."""
     if request.POST.get('action') == 'read':  # How lame is this?
@@ -84,7 +109,7 @@ def new_message(request):
     if not token:
         return HTTPNotFound()
 
-    body = dict(request.POST)
+    body = request.validated['message']
     json_body = json.dumps({'queue': queue, 'body': body})
 
     # Add it to the users's queue.
