@@ -31,6 +31,7 @@ def check_websocket_servers(storage, timeout):
         for server, ws in websockets:
             if not ws.ponged:
                 storage.remove_edge_node(server)
+            ws.close()
 
     tornado.ioloop.IOLoop.instance().add_timeout(time.time() + timeout,
                                                  callback)
