@@ -6,6 +6,7 @@ from nose.tools import eq_
 
 import push.storage.mem
 import push.storage.redis_
+import push.storage.sql
 
 
 class StorageTest(unittest2.TestCase):
@@ -79,3 +80,14 @@ class RedisStorageTest(StorageTest):
     def setUp(self):
         self.storage = push.storage.redis_.Storage(db=9)
         self.storage.redis.flushdb()
+
+
+class SqlStorageTest(StorageTest):
+    __test__ = True
+
+    def setUp(self):
+        self.storage = push.storage.sql.Storage('sqlite://')
+        push.storage.sql.ModelBase.metadata.create_all(self.storage.engine)
+
+    def tearDown(self):
+        push.storage.sql.Session.remove()

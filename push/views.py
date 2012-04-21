@@ -131,8 +131,6 @@ def mark_message_read(request):
     queuey = request.registry['queuey']
     queue = request.matchdict['queue']
 
-    # TODO: queuey 404
-
     body = {'read': key}
     json_body = json.dumps({'queue': queue, 'body': body})
     response = queuey.new_message(queue, json_body)
