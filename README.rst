@@ -62,7 +62,6 @@ Public API
     Add a new message to the queue.
 
     Parameters:
-    * iconUrl: URL of the icon to be shown with this notification.
     * title: Primary text of the notification.
     * body: Secondary text of the notification.
     * actionUrl: URL to be opened if the user clicks on the notification.
