@@ -117,7 +117,7 @@ def new_message(request):
     message = response['messages'][0]
     pub = {'timestamp': message['timestamp'],
            'key': message['key'],
-           'queue': queue,
+           'queue': request.route_url('/queue/{queue}/', queue=queue),
            'body': body}
     publish(request, token, pub)
     return response
@@ -137,7 +137,7 @@ def mark_message_read(request):
     message = response['messages'][0]
     pub = {'timestamp': message['timestamp'],
            'key': message['key'],
-           'queue': queue,
+           'queue': request.route_url('/queue/{queue}/', queue=queue),
            'body': body}
     publish(request, queue, pub)
     return response
@@ -173,6 +173,8 @@ def get_messages(request):
         body = json.loads(message['body'])
         rv.append({'body': body['body'],
                    'queue': body['queue'],
+                   'queue': request.route_url('/queue/{queue}/',
+                                              queue=body['queue']),
                    'key': message['message_id'],
                    'timestamp': message['timestamp']})
     return {'messages': rv}

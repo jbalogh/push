@@ -157,7 +157,7 @@ class ViewTest(unittest2.TestCase):
              u'message_id': response['messages'][0]['key']})
 
         publish_mock.assert_called_with(
-            request, token, {'queue': queue,
+            request, token, {'queue': '/queue/%s/' % queue,
                              'timestamp': '1',
                              'body': body,
                              'key': response['messages'][0]['key']})
@@ -177,7 +177,7 @@ class ViewTest(unittest2.TestCase):
         response = views.new_message(request)
         message = response['messages'][0]
         publish_mock.assert_called_with(
-            request, token, {'queue': queue,
+            request, token, {'queue': '/queue/%s/' % queue,
                              'timestamp': message['timestamp'],
                              'body': body,
                              'key': message['key']})
@@ -260,7 +260,7 @@ class ViewTest(unittest2.TestCase):
         req = Request(matchdict={'queue': token})
         self.assertListEqual(views.get_messages(req)['messages'],
                              [{'body': {'read': 'key'},
-                               'queue': token,
+                               'queue': '/queue/%s/' % token,
                                'key': response['key'],
                                'timestamp': str(response['timestamp'])}])
 
@@ -285,10 +285,10 @@ class ViewTest(unittest2.TestCase):
         eq_(views.get_messages(request), {
             'messages': [{'body': {},
                           'timestamp': '1',
-                          'queue': queue,
+                          'queue': '/queue/%s/' % queue,
                           'key': key1},
                          {'body': {},
-                          'queue': queue,
+                          'queue': '/queue/%s/' % queue,
                           'timestamp': '2',
                           'key': key2}]})
 
@@ -314,7 +314,7 @@ class ViewTest(unittest2.TestCase):
         eq_(views.get_messages(request), {
             'messages': [{'body': {},
                           'timestamp': '2',
-                          'queue': queue,
+                          'queue': '/queue/%s/' % queue,
                           'key': key2}]})
 
     def test_get_nodes(self):
