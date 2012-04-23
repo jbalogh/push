@@ -6,4 +6,4 @@ install:
   - pip install paste pastedeploy pastescript
   - pip install -r dev-reqs.txt --use-mirrors
 script:
-  - PUSH_TEST_CONFIG=./etc/push-dev.ini nosetests
+  - PUSH_TEST_CONFIG=./etc/push-test.ini nosetests
