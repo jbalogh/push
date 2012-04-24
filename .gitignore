@@ -20,3 +20,4 @@ man
 twistd.pid
 etc/local.ini
 *.db
+_build
