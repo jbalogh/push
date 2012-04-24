@@ -1,3 +1,6 @@
+.. image:: https://secure.travis-ci.org/jbalogh/push.png?branch=master
+   :target: http://travis-ci.org/jbalogh/push
+
 Getting Started
 ---------------
 
