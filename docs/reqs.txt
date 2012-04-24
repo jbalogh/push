@@ -1,0 +1,3 @@
+Sphinx==1.1.3
+sphinx-http-domain==0.2
+sphinxcontrib-blockdiag==1.1.1

@@ -18,6 +18,20 @@ import sys, os
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
 
+from sphinx_http_domain.directives import HTTPMethod
+from sphinx.util.docfields import TypedField
+HTTPMethod.doc_field_types.extend([
+    TypedField('post_parameter', label='POST params',
+               names=('pparam', 'postparam'),
+               typenames=('postparamtype',),
+               typerolename='response',
+               can_collapse=True),
+    TypedField('optional_post_parameter', label='Opt. POST params',
+               names=('optpparam', 'optpostparam'),
+               typenames=('optpostparamtype',),
+               can_collapse=True),
+])
+
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
