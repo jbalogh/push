@@ -9,11 +9,15 @@ Getting Started
 3. Install Queuey from https://github.com/mozilla-services/queuey and start
    Cassandra and queuey.
 
-4. Start all the things::
+4. Create the database::
+
+    cat etc/schema.sql | sqlite3 -echo etc/push.db
+
+5. Start all the things::
 
    circusd etc/circus-test.ini
 
-5. Watch it go::
+6. Watch it go::
 
    python client.py http://localhost:5011
 
