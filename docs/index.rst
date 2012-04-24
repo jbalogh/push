@@ -31,14 +31,10 @@ Components
   WebSocket connections are directed there.
 
 
-.. blockdiag::
+.. digraph:: components
 
-    blockdiag {
-      "HTTP API" [stacked];
-      WebSockets [stacked];
-      Firefox [stacked];
-      "HTTP API" -> Router -> WebSockets <- Monitor, Firefox;
-    }
+  "HTTP API" -> Router -> WebSockets -> Firefox;
+  Monitor -> WebSockets;
 
 
 An Example

@@ -40,9 +40,9 @@ HTTPMethod.doc_field_types.extend([
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.viewcode',
-              'sphinx_http_domain',
-              'sphinxcontrib.blockdiag']
-blockdiag_html_image_format = 'SVG'
+              'sphinx.ext.graphviz',
+              'sphinx_http_domain']
+graphviz_output_format = 'svg'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
