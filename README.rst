@@ -9,8 +9,16 @@ Getting Started
 
     pip install -r dev-reqs.txt
 
-3. Install Queuey from https://github.com/mozilla-services/queuey and start
-   Cassandra and queuey.
+3. Install Queuey from https://github.com/mozilla-services/queuey.
+
+   * add ``push`` to the ``application_keys`` section in
+     queuey/etc/queuey-dev.ini::
+
+        [application_keys]
+        queuey = f25bfb8fe200475c8a0532a9cbe7651e
+        push = f25bfb8fe200475c8a0532a9cbe7651e*
+
+   * Start Cassandra and Queuey.
 
 4. Create the database::
 
@@ -18,11 +26,11 @@ Getting Started
 
 5. Start all the things::
 
-   circusd etc/circus-test.ini
+    circusd etc/circus-test.ini
 
 6. Watch it go::
 
-   python client.py http://localhost:5011
+    python client.py http://localhost:5011
 
 
 The API server runs on http://localhost:5001 in dev mode and
